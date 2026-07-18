@@ -1,0 +1,27 @@
+<?php
+/**
+ * Plugin Name:       AI Image Disclosure & Labels
+ * Plugin URI:        https://github.com/gerald-drissner/ai-image-disclosure-labels
+ * Description:       Adds optional, responsive AI disclosure labels and compact symbols to selected Gutenberg images and featured images.
+ * Version:           2.0
+ * Requires at least: 6.7
+ * Requires PHP:      7.4
+ * Author:            Gerald Drißner
+ * Author URI:        https://drissner.media/
+ * Text Domain:       ai-image-disclosure-labels
+ * License:           GPL-2.0-or-later
+ * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
+ */
+
+defined( 'ABSPATH' ) || exit;
+
+define( 'GD_AI_IMAGE_LABELS_VERSION', '2.0' );
+define( 'GD_AI_IMAGE_LABELS_FILE', __FILE__ );
+define( 'GD_AI_IMAGE_LABELS_DIR', plugin_dir_path( __FILE__ ) );
+define( 'GD_AI_IMAGE_LABELS_URL', plugin_dir_url( __FILE__ ) );
+
+require_once GD_AI_IMAGE_LABELS_DIR . 'includes/class-gd-ai-image-labels.php';
+
+register_activation_hook( __FILE__, array( 'GD_AI_Image_Labels', 'activate' ) );
+
+GD_AI_Image_Labels::instance();

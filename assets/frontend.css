@@ -1,0 +1,232 @@
+.gd-ai-image-frame,
+.gd-ai-featured-theme-fallback {
+	position: relative;
+}
+
+figure.gd-ai-image-frame {
+	display: block;
+	container-name: gd-ai-label-frame;
+	container-type: inline-size;
+}
+
+.gd-ai-image-fallback,
+.gd-ai-featured-wrap {
+	position: relative;
+	display: inline-block;
+	max-width: 100%;
+	vertical-align: top;
+}
+
+.gd-ai-featured-wrap > img {
+	display: block;
+}
+
+/*
+ * Known full-width featured-image wrappers become query containers. Unknown
+ * theme wrappers (.gd-ai-featured-theme-fallback) keep their own layout and
+ * are measured by the lightweight JavaScript fallback instead, so the plugin
+ * never forces display or width changes onto markup it does not recognize.
+ */
+.cs-entry__post-media > .gd-ai-featured-wrap,
+.post-media > .gd-ai-featured-wrap {
+	display: block;
+	width: 100%;
+	container-name: gd-ai-label-frame;
+	container-type: inline-size;
+}
+
+.gd-ai-image-frame > .gd-ai-image-label,
+.gd-ai-featured-theme-fallback > .gd-ai-image-label {
+	font-family: var(--gd-ai-label-font-family, inherit);
+	position: absolute;
+	top: var(--gd-ai-label-top, auto);
+	right: var(--gd-ai-label-right, 7px);
+	bottom: var(--gd-ai-label-bottom, 7px);
+	left: var(--gd-ai-label-left, auto);
+	z-index: 20;
+	box-sizing: border-box;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 4px;
+	width: max-content;
+	max-width: calc(100% - 16px);
+	margin: 0;
+	padding: var(--gd-ai-label-padding-y, 3px) var(--gd-ai-label-padding-x, 5px);
+	background-color: var(--gd-ai-label-bg, rgba(23, 23, 23, 0.78));
+	background-image: none;
+	color: var(--gd-ai-label-color, #fff);
+	border: var(--gd-ai-label-border-width, 1px) solid var(--gd-ai-label-border-color, #fff);
+	border-radius: var(--gd-ai-label-radius, 3px);
+	font-size: var(--gd-ai-label-font-size, 9px);
+	font-weight: var(--gd-ai-label-font-weight, 600);
+	line-height: 1.2;
+	letter-spacing: 0.01em;
+	text-transform: var(--gd-ai-label-transform, none);
+	white-space: nowrap;
+	opacity: 1;
+	mix-blend-mode: normal;
+	filter: none;
+	pointer-events: none;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+
+.gd-ai-label-icon {
+	display: none;
+	width: var(--gd-ai-label-icon-size, 16px);
+	height: var(--gd-ai-label-icon-size, 16px);
+	flex: 0 0 var(--gd-ai-label-icon-size, 16px);
+	line-height: 0;
+}
+
+.gd-ai-label-icon .gd-ai-icon {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
+}
+
+.gd-ai-label-icon .gd-ai-icon-monogram rect,
+.gd-ai-label-icon .gd-ai-icon-chip rect,
+.gd-ai-label-icon .gd-ai-icon-chip path {
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 1.7;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+}
+
+.gd-ai-label-icon .gd-ai-icon-sparkle path,
+.gd-ai-label-icon .gd-ai-icon-sparkle circle {
+	fill: currentColor;
+	stroke: none;
+}
+
+.gd-ai-label-icon .gd-ai-icon-monogram text {
+	fill: currentColor;
+	stroke: none;
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 9px;
+	font-weight: 700;
+	letter-spacing: 0.2px;
+}
+
+.gd-ai-label-text {
+	display: inline-block;
+}
+
+.gd-ai-label-trigger {
+	display: none;
+	align-items: center;
+	justify-content: center;
+	box-sizing: border-box;
+	width: var(--gd-ai-label-icon-size, 16px);
+	height: var(--gd-ai-label-icon-size, 16px);
+	margin: 0;
+	padding: 0;
+	background: transparent;
+	color: inherit;
+	border: 0;
+	border-radius: inherit;
+	font: inherit;
+	line-height: 0;
+	cursor: pointer;
+	pointer-events: auto;
+}
+
+.gd-ai-label-trigger:focus-visible {
+	outline: 2px solid currentColor;
+	outline-offset: 2px;
+}
+
+.gd-ai-label-trigger .gd-ai-label-icon {
+	display: block;
+}
+
+.gd-ai-label-tooltip {
+	font-family: var(--gd-ai-label-font-family, inherit);
+	position: absolute;
+	top: var(--gd-ai-tooltip-top, auto);
+	right: var(--gd-ai-tooltip-right, 0);
+	bottom: var(--gd-ai-tooltip-bottom, calc(100% + 6px));
+	left: var(--gd-ai-tooltip-left, auto);
+	z-index: 30;
+	box-sizing: border-box;
+	width: max-content;
+	max-width: min(240px, 72vw);
+	padding: 5px 8px;
+	background-color: var(--gd-ai-label-bg, rgba(23, 23, 23, 0.92));
+	color: var(--gd-ai-label-color, #fff);
+	border: var(--gd-ai-label-border-width, 1px) solid var(--gd-ai-label-border-color, #fff);
+	border-radius: max(3px, var(--gd-ai-label-radius, 3px));
+	font-size: max(11px, var(--gd-ai-label-font-size, 9px));
+	font-weight: var(--gd-ai-label-font-weight, 600);
+	line-height: 1.3;
+	letter-spacing: 0.01em;
+	text-align: left;
+	text-transform: var(--gd-ai-label-transform, none);
+	white-space: normal;
+	visibility: hidden;
+	opacity: 0;
+	transform: translateY(3px);
+	transition: opacity 120ms ease, transform 120ms ease, visibility 120ms ease;
+	pointer-events: none;
+	box-shadow: 0 3px 12px rgba(0, 0, 0, 0.24);
+}
+
+.gd-ai-image-label.gd-ai-tooltip-open > .gd-ai-label-tooltip,
+.gd-ai-label-trigger:focus-visible ~ .gd-ai-label-tooltip {
+	visibility: visible;
+	opacity: 1;
+	transform: translateY(0);
+}
+
+@media (hover: hover) and (pointer: fine) {
+	.gd-ai-label-trigger:hover ~ .gd-ai-label-tooltip {
+		visibility: visible;
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+/* JavaScript fallback classes for wrappers without container-query support. */
+.gd-ai-image-label.gd-ai-label-size-hidden {
+	display: none;
+}
+
+.gd-ai-image-label.gd-ai-label-size-icon {
+	padding: var(--gd-ai-label-icon-padding-y, 3px) var(--gd-ai-label-icon-padding-x, 4px);
+	min-width: calc(var(--gd-ai-label-icon-size, 16px) + (var(--gd-ai-label-icon-padding-x, 4px) * 2));
+}
+
+.gd-ai-image-label.gd-ai-label-size-icon > .gd-ai-label-icon {
+	display: block;
+}
+
+.gd-ai-image-label.gd-ai-label-size-icon > .gd-ai-label-trigger {
+	display: inline-flex;
+}
+
+.gd-ai-image-label.gd-ai-label-size-icon .gd-ai-label-trigger .gd-ai-label-icon {
+	display: block;
+}
+
+.gd-ai-image-label.gd-ai-label-size-icon > .gd-ai-label-text {
+	display: none;
+}
+
+.gd-ai-image-label.gd-ai-label-size-text > .gd-ai-label-icon,
+.gd-ai-image-label.gd-ai-label-size-text > .gd-ai-label-trigger {
+	display: none;
+}
+
+.gd-ai-image-label.gd-ai-label-size-text > .gd-ai-label-text {
+	display: inline-block;
+}
+
+@media (max-width: 480px) {
+	.gd-ai-image-label {
+		max-width: calc(100% - 12px);
+		white-space: normal;
+	}
+}
