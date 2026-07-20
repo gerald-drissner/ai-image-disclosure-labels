@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.0.2
+
+- Fixed the WP Rocket Delay JavaScript exclusion by deriving the frontend script path from the actual installed plugin directory.
+- Renamed remaining internal enqueue handles, the settings-page slug and Gutenberg registration identifiers to the `gdaiidl` prefix.
+- Retained serialized block attributes and established CSS selectors for backward compatibility.
+
+## 2.0.1
+
+- Replaced generic plugin-owned identifiers with the unique `gdaiidl` prefix.
+- Renamed PHP globals, options, metadata, custom hooks, REST identifiers and JavaScript configuration globals.
+- Added automatic migration of settings and metadata from earlier GitHub releases.
+- Documented the external Cache Enabler hook as a third-party integration that must retain its published name.
+
 ## 2.0
 
 - First public major release for WordPress.org and GitHub.

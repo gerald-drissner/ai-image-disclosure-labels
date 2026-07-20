@@ -47,7 +47,7 @@
 
 	addFilter(
 		'blocks.registerBlockType',
-		'gd-ai-image-labels/add-image-attributes',
+		'gdaiidl/add-image-attributes',
 		addImageAttributes
 	);
 
@@ -102,7 +102,7 @@
 
 	addFilter(
 		'editor.BlockEdit',
-		'gd-ai-image-labels/image-controls',
+		'gdaiidl/image-controls',
 		withImageLabelControls
 	);
 
@@ -142,7 +142,7 @@
 
 	addFilter(
 		'editor.BlockListBlock',
-		'gd-ai-image-labels/image-preview',
+		'gdaiidl/image-preview',
 		withImageLabelPreview
 	);
 
@@ -372,9 +372,9 @@
 	}
 
 	if ( PluginDocumentSettingPanel ) {
-		registerPlugin( 'gd-ai-image-labels-featured', {
+		registerPlugin( 'gdaiidl-featured', {
 			render: FeaturedImageLabelPanel,
 			icon: 'format-image'
 		} );
 	}
-} )( window.wp, window.gdAiImageLabelsEditor );
+} )( window.wp, window.gdaiidlEditorConfig );

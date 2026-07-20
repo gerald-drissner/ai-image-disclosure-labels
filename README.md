@@ -62,13 +62,13 @@ The WordPress.org plugin slug and translation domain are:
 ai-image-disclosure-labels
 ```
 
-Internal option names, metadata keys, CSS handles and hooks retain the historical `gd_ai_` / `gd-ai-` prefix to preserve upgrades.
+Plugin-owned PHP globals, option names, metadata keys, custom hooks, REST routes, JavaScript configuration objects, enqueue handles, settings slugs and editor registration identifiers use the unique `gdaiidl` prefix. Earlier GitHub settings and metadata are migrated automatically. Existing serialized block attributes (`gdAiLabel` and `gdAiLabelText`) and established `gd-ai-*` CSS selectors remain unchanged for backward compatibility with saved posts and custom styling.
 
-Run the official Plugin Check workflow on every push and pull request. See [PUBLISHING.md](PUBLISHING.md) for the release process.
+Run the official Plugin Check workflow before each release and review every reported error and warning.
 
 ## Support and contributions
 
-Bug reports and focused pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
+Bug reports and focused pull requests are welcome through the GitHub issue tracker and pull-request workflow.
 
 ## License
 

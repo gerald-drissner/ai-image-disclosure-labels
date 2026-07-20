@@ -5,7 +5,7 @@
  * Removes all plugin options and per-post label metadata. Runs only when the
  * plugin is deleted through the WordPress admin, never on deactivation.
  *
- * @package GD_AI_Image_Labels
+ * @package GDAIIDL_Plugin
  */
 
 defined( 'WP_UNINSTALL_PLUGIN' ) || exit;
@@ -15,28 +15,36 @@ defined( 'WP_UNINSTALL_PLUGIN' ) || exit;
  *
  * @return void
  */
-function gd_ai_image_labels_uninstall_site() {
-	delete_option( 'gd_ai_image_labels_settings' );
-	delete_option( 'gd_ai_image_labels_version' );
+function gdaiidl_uninstall_site() {
+	delete_option( 'gdaiidl_settings' );
+	delete_option( 'gdaiidl_version' );
 
-	delete_post_meta_by_key( '_gd_ai_featured_enabled' );
-	delete_post_meta_by_key( '_gd_ai_featured_text' );
-	delete_post_meta_by_key( '_gd_ai_avg_color' );
+	delete_post_meta_by_key( '_gdaiidl_featured_enabled' );
+	delete_post_meta_by_key( '_gdaiidl_featured_text' );
+	delete_post_meta_by_key( '_gdaiidl_avg_color' );
+
+	/* Remove data left by GitHub releases published before version 2.0.1. */
+	$legacy_prefix = 'gd_' . 'ai_';
+	delete_option( $legacy_prefix . 'image_labels_settings' );
+	delete_option( $legacy_prefix . 'image_labels_version' );
+	delete_post_meta_by_key( '_' . $legacy_prefix . 'featured_enabled' );
+	delete_post_meta_by_key( '_' . $legacy_prefix . 'featured_text' );
+	delete_post_meta_by_key( '_' . $legacy_prefix . 'avg_color' );
 }
 
 if ( is_multisite() ) {
-	$gd_ai_image_labels_site_ids = get_sites(
+	$gdaiidl_site_ids = get_sites(
 		array(
 			'fields' => 'ids',
 			'number' => 0,
 		)
 	);
 
-	foreach ( $gd_ai_image_labels_site_ids as $gd_ai_image_labels_site_id ) {
-		switch_to_blog( $gd_ai_image_labels_site_id );
-		gd_ai_image_labels_uninstall_site();
+	foreach ( $gdaiidl_site_ids as $gdaiidl_site_id ) {
+		switch_to_blog( $gdaiidl_site_id );
+		gdaiidl_uninstall_site();
 		restore_current_blog();
 	}
 } else {
-	gd_ai_image_labels_uninstall_site();
+	gdaiidl_uninstall_site();
 }

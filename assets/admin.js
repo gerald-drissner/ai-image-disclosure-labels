@@ -423,4 +423,4 @@
 	} );
 
 	updatePreview();
-} )( window.gdAiImageLabelsAdmin, window.wp );
+} )( window.gdaiidlAdminConfig, window.wp );

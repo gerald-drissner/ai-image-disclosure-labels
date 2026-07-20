@@ -469,4 +469,4 @@
 	} else {
 		initialize();
 	}
-} )( window.gdAiImageLabelsFrontend );
+} )( window.gdaiidlFrontendConfig );

@@ -2,22 +2,23 @@
 /**
  * Main plugin class.
  *
- * @package GD_AI_Image_Labels
+ * @package GDAIIDL_Plugin
  */
 
 defined( 'ABSPATH' ) || exit;
 
-final class GD_AI_Image_Labels {
+final class GDAIIDL_Plugin {
 
-	const OPTION_KEY            = 'gd_ai_image_labels_settings';
-	const VERSION_OPTION        = 'gd_ai_image_labels_version';
-	const META_FEATURED_ENABLED = '_gd_ai_featured_enabled';
-	const META_FEATURED_TEXT    = '_gd_ai_featured_text';
+	const OPTION_KEY            = 'gdaiidl_settings';
+	const VERSION_OPTION        = 'gdaiidl_version';
+	const META_FEATURED_ENABLED = '_gdaiidl_featured_enabled';
+	const META_FEATURED_TEXT    = '_gdaiidl_featured_text';
+	const META_AVERAGE_COLOR    = '_gdaiidl_avg_color';
 
 	/**
 	 * Singleton instance.
 	 *
-	 * @var GD_AI_Image_Labels|null
+	 * @var GDAIIDL_Plugin|null
 	 */
 	private static $instance = null;
 
@@ -31,7 +32,7 @@ final class GD_AI_Image_Labels {
 	/**
 	 * Get the singleton instance.
 	 *
-	 * @return GD_AI_Image_Labels
+	 * @return GDAIIDL_Plugin
 	 */
 	public static function instance() {
 		if ( null === self::$instance ) {
@@ -47,18 +48,74 @@ final class GD_AI_Image_Labels {
 	 * @return void
 	 */
 	public static function activate() {
+		self::migrate_legacy_options();
+
 		if ( false === get_option( self::OPTION_KEY, false ) ) {
 			add_option( self::OPTION_KEY, self::defaults(), '', true );
 		}
 
 		if ( false === get_option( self::VERSION_OPTION, false ) ) {
-			add_option( self::VERSION_OPTION, GD_AI_IMAGE_LABELS_VERSION, '', true );
+			add_option( self::VERSION_OPTION, GDAIIDL_VERSION, '', true );
 		} else {
-			update_option( self::VERSION_OPTION, GD_AI_IMAGE_LABELS_VERSION );
+			update_option( self::VERSION_OPTION, GDAIIDL_VERSION );
 		}
 
 		if ( function_exists( 'wp_set_options_autoload' ) ) {
 			wp_set_options_autoload( array( self::OPTION_KEY, self::VERSION_OPTION ), true );
+		}
+	}
+
+	/**
+	 * Return storage keys used by versions released before 2.0.1.
+	 *
+	 * These compatibility-only names are assembled from their historical
+	 * components and are never used for newly stored data. They exist solely
+	 * to migrate and remove data created by earlier GitHub releases.
+	 *
+	 * @return array
+	 */
+	private static function legacy_storage_keys() {
+		$legacy_prefix = 'gd_' . 'ai_';
+
+		return array(
+			'settings'         => $legacy_prefix . 'image_labels_settings',
+			'version'          => $legacy_prefix . 'image_labels_version',
+			'featured_enabled' => '_' . $legacy_prefix . 'featured_enabled',
+			'featured_text'    => '_' . $legacy_prefix . 'featured_text',
+			'average_color'    => '_' . $legacy_prefix . 'avg_color',
+		);
+	}
+
+	/**
+	 * Copy legacy options to the new uniquely prefixed option names.
+	 *
+	 * @return void
+	 */
+	private static function migrate_legacy_options() {
+		$legacy = self::legacy_storage_keys();
+
+		if ( false === get_option( self::OPTION_KEY, false ) ) {
+			$legacy_settings = get_option( $legacy['settings'], false );
+
+			if ( is_array( $legacy_settings ) ) {
+				add_option( self::OPTION_KEY, $legacy_settings, '', true );
+			}
+		}
+
+		if ( false === get_option( self::VERSION_OPTION, false ) ) {
+			$legacy_version = get_option( $legacy['version'], '' );
+
+			if ( '' !== $legacy_version ) {
+				add_option( self::VERSION_OPTION, (string) $legacy_version, '', true );
+			}
+		}
+
+		if ( false !== get_option( self::OPTION_KEY, false ) ) {
+			delete_option( $legacy['settings'] );
+		}
+
+		if ( false !== get_option( self::VERSION_OPTION, false ) ) {
+			delete_option( $legacy['version'] );
 		}
 	}
 
@@ -86,7 +143,7 @@ final class GD_AI_Image_Labels {
 		add_filter( 'wp_update_attachment_metadata', array( $this, 'clear_attachment_color_cache' ), 10, 2 );
 
 		add_filter( 'rocket_delay_js_exclusions', array( $this, 'exclude_frontend_script_from_delay' ) );
-		add_filter( 'plugin_action_links_' . plugin_basename( GD_AI_IMAGE_LABELS_FILE ), array( $this, 'add_settings_link' ) );
+		add_filter( 'plugin_action_links_' . plugin_basename( GDAIIDL_FILE ), array( $this, 'add_settings_link' ) );
 	}
 
 	/**
@@ -294,7 +351,7 @@ final class GD_AI_Image_Labels {
 		 * Extension point for cache systems that are not covered above,
 		 * for example a custom Cloudflare APO purge via the Cloudflare API.
 		 */
-		do_action( 'gd_ai_image_labels_purge_caches' );
+		do_action( 'gdaiidl_purge_caches' );
 	}
 
 	/**
@@ -358,9 +415,11 @@ final class GD_AI_Image_Labels {
 	 * @return void
 	 */
 	public function maybe_upgrade_settings() {
+		self::migrate_legacy_options();
+
 		$installed_version = (string) get_option( self::VERSION_OPTION, '' );
 
-		if ( '' !== $installed_version && version_compare( $installed_version, GD_AI_IMAGE_LABELS_VERSION, '>=' ) ) {
+		if ( '' !== $installed_version && version_compare( $installed_version, GDAIIDL_VERSION, '>=' ) ) {
 			return;
 		}
 
@@ -400,7 +459,7 @@ final class GD_AI_Image_Labels {
 			}
 		}
 
-		update_option( self::VERSION_OPTION, GD_AI_IMAGE_LABELS_VERSION, true );
+		update_option( self::VERSION_OPTION, GDAIIDL_VERSION, true );
 
 		if ( function_exists( 'wp_set_options_autoload' ) ) {
 			wp_set_options_autoload( array( self::OPTION_KEY, self::VERSION_OPTION ), true );
@@ -456,7 +515,7 @@ final class GD_AI_Image_Labels {
 	 * @return array
 	 */
 	private function post_types() {
-		$post_types = apply_filters( 'gd_ai_image_labels_post_types', array( 'post', 'page' ) );
+		$post_types = apply_filters( 'gdaiidl_post_types', array( 'post', 'page' ) );
 		$post_types = is_array( $post_types ) ? array_map( 'sanitize_key', $post_types ) : array( 'post', 'page' );
 		$post_types = array_values( array_unique( array_filter( $post_types, 'post_type_exists' ) ) );
 
@@ -486,9 +545,61 @@ final class GD_AI_Image_Labels {
 			'img.wp-post-image',
 		);
 
-		$selectors = apply_filters( 'gd_ai_image_labels_featured_selectors', array_merge( $user_selectors, $selectors ) );
+		$selectors = apply_filters( 'gdaiidl_featured_selectors', array_merge( $user_selectors, $selectors ) );
 
 		return is_array( $selectors ) ? array_values( array_filter( array_map( 'sanitize_text_field', $selectors ) ) ) : array();
+	}
+
+	/**
+	 * Read metadata and lazily migrate a value from an earlier GitHub release.
+	 *
+	 * @param int    $post_id   Post or attachment ID.
+	 * @param string $new_key   Current metadata key.
+	 * @param string $legacy_id Key name in legacy_storage_keys().
+	 * @return mixed
+	 */
+	private function get_compatible_post_meta( $post_id, $new_key, $legacy_id ) {
+		$value = get_post_meta( $post_id, $new_key, true );
+
+		if ( '' !== $value ) {
+			return $value;
+		}
+
+		$legacy     = self::legacy_storage_keys();
+		$legacy_key = isset( $legacy[ $legacy_id ] ) ? $legacy[ $legacy_id ] : '';
+
+		if ( '' === $legacy_key ) {
+			return $value;
+		}
+
+		$legacy_value = get_post_meta( $post_id, $legacy_key, true );
+
+		if ( '' === $legacy_value ) {
+			return $value;
+		}
+
+		update_post_meta( $post_id, $new_key, $legacy_value );
+		delete_post_meta( $post_id, $legacy_key );
+
+		return $legacy_value;
+	}
+
+	/**
+	 * Delete current and legacy metadata for one logical field.
+	 *
+	 * @param int    $post_id   Post or attachment ID.
+	 * @param string $new_key   Current metadata key.
+	 * @param string $legacy_id Key name in legacy_storage_keys().
+	 * @return void
+	 */
+	private function delete_compatible_post_meta( $post_id, $new_key, $legacy_id ) {
+		delete_post_meta( $post_id, $new_key );
+
+		$legacy = self::legacy_storage_keys();
+
+		if ( isset( $legacy[ $legacy_id ] ) ) {
+			delete_post_meta( $post_id, $legacy[ $legacy_id ] );
+		}
 	}
 
 	/**
@@ -541,7 +652,7 @@ final class GD_AI_Image_Labels {
 	 */
 	public function register_rest_routes() {
 		register_rest_route(
-			'gd-ai-image-labels/v1',
+			'gdaiidl/v1',
 			'/post/(?P<id>\\d+)',
 			array(
 				array(
@@ -582,7 +693,7 @@ final class GD_AI_Image_Labels {
 
 		if ( ! $post || ! in_array( $post->post_type, $this->post_types(), true ) ) {
 			return new WP_Error(
-				'gd_ai_image_labels_invalid_post',
+				'gdaiidl_invalid_post',
 				__( 'The post or page could not be found.', 'ai-image-disclosure-labels' ),
 				array( 'status' => 404 )
 			);
@@ -590,7 +701,7 @@ final class GD_AI_Image_Labels {
 
 		if ( ! current_user_can( 'edit_post', $post_id ) ) {
 			return new WP_Error(
-				'gd_ai_image_labels_forbidden',
+				'gdaiidl_forbidden',
 				__( 'You are not allowed to edit this post.', 'ai-image-disclosure-labels' ),
 				array( 'status' => rest_authorization_required_code() )
 			);
@@ -623,29 +734,29 @@ final class GD_AI_Image_Labels {
 		if ( $enabled ) {
 			$result = update_post_meta( $post_id, self::META_FEATURED_ENABLED, '1' );
 
-			if ( false === $result && '1' !== (string) get_post_meta( $post_id, self::META_FEATURED_ENABLED, true ) ) {
+			if ( false === $result && '1' !== (string) $this->get_compatible_post_meta( $post_id, self::META_FEATURED_ENABLED, 'featured_enabled' ) ) {
 				return new WP_Error(
-					'gd_ai_image_labels_save_failed',
+					'gdaiidl_save_failed',
 					__( 'The label could not be saved.', 'ai-image-disclosure-labels' ),
 					array( 'status' => 500 )
 				);
 			}
 		} else {
-			delete_post_meta( $post_id, self::META_FEATURED_ENABLED );
+			$this->delete_compatible_post_meta( $post_id, self::META_FEATURED_ENABLED, 'featured_enabled' );
 		}
 
 		if ( '' !== $text ) {
 			$text_result = update_post_meta( $post_id, self::META_FEATURED_TEXT, $text );
 
-			if ( false === $text_result && $text !== (string) get_post_meta( $post_id, self::META_FEATURED_TEXT, true ) ) {
+			if ( false === $text_result && $text !== (string) $this->get_compatible_post_meta( $post_id, self::META_FEATURED_TEXT, 'featured_text' ) ) {
 				return new WP_Error(
-					'gd_ai_image_labels_text_save_failed',
+					'gdaiidl_text_save_failed',
 					__( 'The custom label text could not be saved.', 'ai-image-disclosure-labels' ),
 					array( 'status' => 500 )
 				);
 			}
 		} else {
-			delete_post_meta( $post_id, self::META_FEATURED_TEXT );
+			$this->delete_compatible_post_meta( $post_id, self::META_FEATURED_TEXT, 'featured_text' );
 		}
 
 		clean_post_cache( $post_id );
@@ -662,8 +773,8 @@ final class GD_AI_Image_Labels {
 	 */
 	private function featured_label_rest_data( $post_id ) {
 		return array(
-			'enabled' => '1' === (string) get_post_meta( $post_id, self::META_FEATURED_ENABLED, true ),
-			'text'    => (string) get_post_meta( $post_id, self::META_FEATURED_TEXT, true ),
+			'enabled' => '1' === (string) $this->get_compatible_post_meta( $post_id, self::META_FEATURED_ENABLED, 'featured_enabled' ),
+			'text'    => (string) $this->get_compatible_post_meta( $post_id, self::META_FEATURED_TEXT, 'featured_text' ),
 		);
 	}
 
@@ -675,7 +786,7 @@ final class GD_AI_Image_Labels {
 	public function rest_featured_label_schema() {
 		return array(
 			'$schema'    => 'http://json-schema.org/draft-04/schema#',
-			'title'      => 'gd-ai-image-featured-label',
+			'title'      => 'gdaiidl-featured-label',
 			'type'       => 'object',
 			'properties' => array(
 				'enabled' => array(
@@ -734,8 +845,8 @@ final class GD_AI_Image_Labels {
 		$settings = $this->settings();
 
 		wp_enqueue_script(
-			'gd-ai-image-labels-editor',
-			GD_AI_IMAGE_LABELS_URL . 'assets/editor.js',
+			'gdaiidl-editor',
+			GDAIIDL_URL . 'assets/editor.js',
 			array(
 				'wp-api-fetch',
 				'wp-block-editor',
@@ -749,33 +860,33 @@ final class GD_AI_Image_Labels {
 				'wp-i18n',
 				'wp-plugins',
 			),
-			GD_AI_IMAGE_LABELS_VERSION,
+			GDAIIDL_VERSION,
 			true
 		);
 
 		wp_localize_script(
-			'gd-ai-image-labels-editor',
-			'gdAiImageLabelsEditor',
+			'gdaiidl-editor',
+			'gdaiidlEditorConfig',
 			array(
 				'defaultText'      => $settings['label_text'],
 				'position'         => $settings['position'],
 				'allowedPostTypes' => $this->post_types(),
 				'metaEnabled'      => self::META_FEATURED_ENABLED,
 				'metaText'         => self::META_FEATURED_TEXT,
-				'restPath'         => '/gd-ai-image-labels/v1/post/',
+				'restPath'         => '/gdaiidl/v1/post/',
 			)
 		);
 
-		wp_set_script_translations( 'gd-ai-image-labels-editor', 'ai-image-disclosure-labels' );
+		wp_set_script_translations( 'gdaiidl-editor', 'ai-image-disclosure-labels' );
 
 		wp_enqueue_style(
-			'gd-ai-image-labels-editor',
-			GD_AI_IMAGE_LABELS_URL . 'assets/editor.css',
+			'gdaiidl-editor',
+			GDAIIDL_URL . 'assets/editor.css',
 			array(),
-			GD_AI_IMAGE_LABELS_VERSION
+			GDAIIDL_VERSION
 		);
 
-		wp_add_inline_style( 'gd-ai-image-labels-editor', $this->dynamic_badge_css( true ) );
+		wp_add_inline_style( 'gdaiidl-editor', $this->dynamic_badge_css( true ) );
 	}
 
 	/**
@@ -787,13 +898,13 @@ final class GD_AI_Image_Labels {
 		$settings = $this->settings();
 
 		wp_enqueue_style(
-			'gd-ai-image-labels',
-			GD_AI_IMAGE_LABELS_URL . 'assets/frontend.css',
+			'gdaiidl-frontend',
+			GDAIIDL_URL . 'assets/frontend.css',
 			array(),
-			GD_AI_IMAGE_LABELS_VERSION
+			GDAIIDL_VERSION
 		);
 
-		wp_add_inline_style( 'gd-ai-image-labels', $this->dynamic_badge_css( false ) );
+		wp_add_inline_style( 'gdaiidl-frontend', $this->dynamic_badge_css( false ) );
 
 		$minimum_width          = isset( $settings['minimum_image_width'] ) ? (int) $settings['minimum_image_width'] : 0;
 		$minimum_text_width     = isset( $settings['minimum_text_width'] ) ? (int) $settings['minimum_text_width'] : 0;
@@ -804,8 +915,8 @@ final class GD_AI_Image_Labels {
 		if ( is_singular( $this->post_types() ) ) {
 			$post_id = get_queried_object_id();
 
-			if ( $post_id && get_post_meta( $post_id, self::META_FEATURED_ENABLED, true ) ) {
-				$custom_text = get_post_meta( $post_id, self::META_FEATURED_TEXT, true );
+			if ( $post_id && $this->get_compatible_post_meta( $post_id, self::META_FEATURED_ENABLED, 'featured_enabled' ) ) {
+				$custom_text = $this->get_compatible_post_meta( $post_id, self::META_FEATURED_TEXT, 'featured_text' );
 				$custom_text = is_string( $custom_text ) ? trim( sanitize_text_field( $custom_text ) ) : '';
 				$featured_label_text = '' !== $custom_text ? $custom_text : trim( $settings['label_text'] );
 				$enable_theme_fallback = '' !== $featured_label_text;
@@ -829,16 +940,16 @@ final class GD_AI_Image_Labels {
 		}
 
 		wp_enqueue_script(
-			'gd-ai-image-labels-frontend',
-			GD_AI_IMAGE_LABELS_URL . 'assets/frontend.js',
+			'gdaiidl-frontend',
+			GDAIIDL_URL . 'assets/frontend.js',
 			array(),
-			GD_AI_IMAGE_LABELS_VERSION,
+			GDAIIDL_VERSION,
 			true
 		);
 
 		wp_localize_script(
-			'gd-ai-image-labels-frontend',
-			'gdAiImageLabelsFrontend',
+			'gdaiidl-frontend',
+			'gdaiidlFrontendConfig',
 			array(
 				'labelText'          => $featured_label_text,
 				'preset'             => $settings['preset'],
@@ -942,12 +1053,12 @@ final class GD_AI_Image_Labels {
 		if (
 			! $post_id ||
 			(int) $attachment_id !== (int) get_post_thumbnail_id( $post_id ) ||
-			! get_post_meta( $post_id, self::META_FEATURED_ENABLED, true )
+			! $this->get_compatible_post_meta( $post_id, self::META_FEATURED_ENABLED, 'featured_enabled' )
 		) {
 			return $html;
 		}
 
-		$custom_text = get_post_meta( $post_id, self::META_FEATURED_TEXT, true );
+		$custom_text = $this->get_compatible_post_meta( $post_id, self::META_FEATURED_TEXT, 'featured_text' );
 		$label_html  = $this->label_html( is_string( $custom_text ) ? $custom_text : '', (int) $attachment_id );
 
 		if ( '' === $label_html ) {
@@ -976,12 +1087,12 @@ final class GD_AI_Image_Labels {
 			wp_doing_ajax() ||
 			is_feed() ||
 			false !== strpos( $html, 'gd-ai-featured-wrap' ) ||
-			! get_post_meta( $post_id, self::META_FEATURED_ENABLED, true )
+			! $this->get_compatible_post_meta( $post_id, self::META_FEATURED_ENABLED, 'featured_enabled' )
 		) {
 			return $html;
 		}
 
-		$custom_text = get_post_meta( $post_id, self::META_FEATURED_TEXT, true );
+		$custom_text = $this->get_compatible_post_meta( $post_id, self::META_FEATURED_TEXT, 'featured_text' );
 		$label_html  = $this->label_html( is_string( $custom_text ) ? $custom_text : '', (int) $post_thumbnail_id );
 
 		if ( '' === $label_html ) {
@@ -1008,7 +1119,7 @@ final class GD_AI_Image_Labels {
 			return null;
 		}
 
-		$cached = get_post_meta( $attachment_id, '_gd_ai_avg_color', true );
+		$cached = $this->get_compatible_post_meta( $attachment_id, self::META_AVERAGE_COLOR, 'average_color' );
 
 		if ( is_string( $cached ) && preg_match( '/^\d{1,3},\d{1,3},\d{1,3}$/', $cached ) ) {
 			$parts = array_map( 'intval', explode( ',', $cached ) );
@@ -1041,7 +1152,7 @@ final class GD_AI_Image_Labels {
 		}
 
 		if ( ! $file || ! is_readable( $file ) || filesize( $file ) > 5 * MB_IN_BYTES ) {
-			update_post_meta( $attachment_id, '_gd_ai_avg_color', 'none' );
+			update_post_meta( $attachment_id, self::META_AVERAGE_COLOR, 'none' );
 
 			return null;
 		}
@@ -1050,7 +1161,7 @@ final class GD_AI_Image_Labels {
 		$image    = $contents ? @imagecreatefromstring( $contents ) : false; // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- GD emits warnings for unsupported formats; handled via the false return.
 
 		if ( ! $image ) {
-			update_post_meta( $attachment_id, '_gd_ai_avg_color', 'none' );
+			update_post_meta( $attachment_id, self::META_AVERAGE_COLOR, 'none' );
 
 			return null;
 		}
@@ -1067,7 +1178,7 @@ final class GD_AI_Image_Labels {
 			'b' => $rgb & 0xFF,
 		);
 
-		update_post_meta( $attachment_id, '_gd_ai_avg_color', $color['r'] . ',' . $color['g'] . ',' . $color['b'] );
+		update_post_meta( $attachment_id, self::META_AVERAGE_COLOR, $color['r'] . ',' . $color['g'] . ',' . $color['b'] );
 
 		return $color;
 	}
@@ -1371,7 +1482,7 @@ final class GD_AI_Image_Labels {
 	 * @return array
 	 */
 	public function clear_attachment_color_cache( $metadata, $attachment_id ) {
-		delete_post_meta( (int) $attachment_id, '_gd_ai_avg_color' );
+		$this->delete_compatible_post_meta( (int) $attachment_id, self::META_AVERAGE_COLOR, 'average_color' );
 
 		return $metadata;
 	}
@@ -1383,7 +1494,7 @@ final class GD_AI_Image_Labels {
 	 */
 	public function register_settings() {
 		register_setting(
-			'gd_ai_image_labels',
+			'gdaiidl_settings_group',
 			self::OPTION_KEY,
 			array(
 				'type'              => 'array',
@@ -1598,7 +1709,7 @@ final class GD_AI_Image_Labels {
 			__( 'AI Image Disclosure & Labels', 'ai-image-disclosure-labels' ),
 			__( 'AI Image Labels', 'ai-image-disclosure-labels' ),
 			'manage_options',
-			'gd-ai-image-labels',
+			'gdaiidl-settings',
 			array( $this, 'render_settings_page' )
 		);
 	}
@@ -1610,35 +1721,35 @@ final class GD_AI_Image_Labels {
 	 * @return void
 	 */
 	public function enqueue_admin_assets( $hook_suffix ) {
-		if ( 'settings_page_gd-ai-image-labels' !== $hook_suffix ) {
+		if ( 'settings_page_gdaiidl-settings' !== $hook_suffix ) {
 			return;
 		}
 
 		wp_enqueue_media();
 
 		wp_enqueue_style(
-			'gd-ai-image-labels-admin',
-			GD_AI_IMAGE_LABELS_URL . 'assets/admin.css',
+			'gdaiidl-admin',
+			GDAIIDL_URL . 'assets/admin.css',
 			array(),
-			GD_AI_IMAGE_LABELS_VERSION
+			GDAIIDL_VERSION
 		);
 
 		wp_enqueue_script(
-			'gd-ai-image-labels-admin',
-			GD_AI_IMAGE_LABELS_URL . 'assets/admin.js',
+			'gdaiidl-admin',
+			GDAIIDL_URL . 'assets/admin.js',
 			array( 'media-editor', 'wp-i18n' ),
-			GD_AI_IMAGE_LABELS_VERSION,
+			GDAIIDL_VERSION,
 			true
 		);
 
-		wp_set_script_translations( 'gd-ai-image-labels-admin', 'ai-image-disclosure-labels' );
+		wp_set_script_translations( 'gdaiidl-admin', 'ai-image-disclosure-labels' );
 
 		$settings    = $this->settings();
 		$custom_icon = $this->custom_icon_data();
 
 		wp_localize_script(
-			'gd-ai-image-labels-admin',
-			'gdAiImageLabelsAdmin',
+			'gdaiidl-admin',
+			'gdaiidlAdminConfig',
 			array(
 				'fontStacks'  => self::font_stacks(),
 				'presets' => $this->presets(),
@@ -1678,21 +1789,21 @@ final class GD_AI_Image_Labels {
 				<p><?php esc_html_e( 'Article 50 of the EU AI Act (Regulation (EU) 2024/1689) includes transparency duties for providers and deployers of certain AI systems, including visible disclosure of deep fakes and certain other AI-generated content. The rules apply from August 2, 2026. This plugin helps you add a visible disclosure to selected images. It does not decide whether a particular image must be labeled, does not add machine-readable markings, and is not legal advice.', 'ai-image-disclosure-labels' ); ?></p>
 			</div>
 
-			<?php $gd_ai_detected_caches = $this->detected_cache_systems(); ?>
-			<?php if ( ! empty( $gd_ai_detected_caches ) ) : ?>
+			<?php $gdaiidl_detected_caches = $this->detected_cache_systems(); ?>
+			<?php if ( ! empty( $gdaiidl_detected_caches ) ) : ?>
 				<p class="gd-ai-cache-status">
 					<?php
 					printf(
 						/* translators: %s: comma-separated list of detected caching plugins, e.g. "WP Rocket, Cloudflare". */
 						esc_html__( 'Caching detected: %s. The page cache is cleared automatically whenever you save these settings or change a label, so your changes are visible immediately.', 'ai-image-disclosure-labels' ),
-						esc_html( implode( ', ', $gd_ai_detected_caches ) )
+						esc_html( implode( ', ', $gdaiidl_detected_caches ) )
 					);
 					?>
 				</p>
 			<?php endif; ?>
 
 			<form action="options.php" method="post">
-				<?php settings_fields( 'gd_ai_image_labels' ); ?>
+				<?php settings_fields( 'gdaiidl_settings_group' ); ?>
 
 				<div class="gd-ai-settings-grid">
 					<main class="gd-ai-settings-main">
@@ -2205,8 +2316,15 @@ final class GD_AI_Image_Labels {
 	 */
 	public function exclude_frontend_script_from_delay( $exclusions ) {
 		$exclusions = is_array( $exclusions ) ? $exclusions : array();
-		$exclusions[] = 'gd-ai-image-labels-frontend';
-		$exclusions[] = '/gd-ai-image-labels/assets/frontend.js';
+		$script_path = plugin_basename( GDAIIDL_DIR . 'assets/frontend.js' );
+
+		/*
+		 * WP Rocket matches Delay JavaScript exclusions against script URLs,
+		 * not WordPress enqueue handles. Build the URL fragment from the actual
+		 * installed plugin directory so renamed development folders and the
+		 * canonical WordPress.org folder are both handled correctly.
+		 */
+		$exclusions[] = '/' . ltrim( wp_normalize_path( $script_path ), '/' );
 
 		return array_values( array_unique( $exclusions ) );
 	}
@@ -2220,7 +2338,7 @@ final class GD_AI_Image_Labels {
 	public function add_settings_link( $links ) {
 		array_unshift(
 			$links,
-			'<a href="' . esc_url( admin_url( 'options-general.php?page=gd-ai-image-labels' ) ) . '">' . esc_html__( 'Settings', 'ai-image-disclosure-labels' ) . '</a>'
+			'<a href="' . esc_url( admin_url( 'options-general.php?page=gdaiidl-settings' ) ) . '">' . esc_html__( 'Settings', 'ai-image-disclosure-labels' ) . '</a>'
 		);
 
 		return $links;
