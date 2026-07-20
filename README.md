@@ -68,6 +68,9 @@ Run the official Plugin Check workflow before each release and review every repo
 
 ## Support and contributions
 
+Support: https://drissner.media/kontakt  
+Donate: https://www.paypal.com/paypalme/drissner
+
 Bug reports and focused pull requests are welcome through the GitHub issue tracker and pull-request workflow.
 
 ## License

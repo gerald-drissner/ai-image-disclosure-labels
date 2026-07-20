@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.0.3
+
+- Added Donate and Support links to the WordPress Plugins screen and the settings page.
+- Added the current plugin version and developer credit to the settings page.
+- Added the official WordPress.org donation link and explicit support information.
+
 ## 2.0.2
 
 - Fixed the WP Rocket Delay JavaScript exclusion by deriving the frontend script path from the actual installed plugin directory.

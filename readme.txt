@@ -1,10 +1,11 @@
 === AI Image Disclosure & Labels ===
 Contributors: geralddrissner
+Donate link: https://www.paypal.com/paypalme/drissner
 Tags: ai, image, label, badge, transparency
 Requires at least: 6.7
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 2.0.2
+Stable tag: 2.0.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -79,7 +80,16 @@ The plugin automatically clears WP Rocket (including its Cloudflare add-on), Lit
 
 Yes. Choose "Custom symbol" and select a PNG or SVG file from the Media Library. SVG files can only be used if your installation safely allows SVG uploads; the plugin does not enable SVG uploads globally.
 
+== Support ==
+
+For support, visit [drissner.media/kontakt](https://drissner.media/kontakt). If the plugin is useful to you, you can support its development through [PayPal](https://www.paypal.com/paypalme/drissner).
+
 == Changelog ==
+
+= 2.0.3 =
+* Added Donate and Support links to the WordPress Plugins screen and the plugin settings page.
+* Added the current plugin version and developer credit to the settings page.
+* Added the official WordPress.org donation link and explicit support information.
 
 = 2.0.2 =
 * Fixed the WP Rocket Delay JavaScript exclusion by deriving the frontend script path from the actual installed plugin directory.

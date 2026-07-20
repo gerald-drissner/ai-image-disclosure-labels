@@ -144,6 +144,7 @@ final class GDAIIDL_Plugin {
 
 		add_filter( 'rocket_delay_js_exclusions', array( $this, 'exclude_frontend_script_from_delay' ) );
 		add_filter( 'plugin_action_links_' . plugin_basename( GDAIIDL_FILE ), array( $this, 'add_settings_link' ) );
+		add_filter( 'plugin_row_meta', array( $this, 'add_plugin_row_meta' ), 10, 2 );
 	}
 
 	/**
@@ -2063,6 +2064,28 @@ final class GDAIIDL_Plugin {
 					</aside>
 				</div>
 			</form>
+
+			<div class="gd-ai-plugin-meta">
+				<p>
+					<strong>
+						<?php
+						printf(
+							/* translators: %s: current plugin version. */
+							esc_html__( 'Version %s', 'ai-image-disclosure-labels' ),
+							esc_html( GDAIIDL_VERSION )
+						);
+						?>
+					</strong>
+					<span aria-hidden="true"> &middot; </span>
+					<?php esc_html_e( 'Developed by', 'ai-image-disclosure-labels' ); ?>
+					<a href="https://drissner.media/" target="_blank" rel="noopener noreferrer">Gerald Drißner</a>
+				</p>
+				<p>
+					<a href="https://www.paypal.com/paypalme/drissner" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Donate', 'ai-image-disclosure-labels' ); ?></a>
+					<span aria-hidden="true"> &bull; </span>
+					<a href="https://drissner.media/kontakt" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Support', 'ai-image-disclosure-labels' ); ?></a>
+				</p>
+			</div>
 		</div>
 		<?php
 	}
@@ -2342,5 +2365,23 @@ final class GDAIIDL_Plugin {
 		);
 
 		return $links;
+	}
+
+	/**
+	 * Add donation and support links below the plugin description.
+	 *
+	 * @param array  $plugin_meta Existing plugin row metadata.
+	 * @param string $plugin_file Plugin basename.
+	 * @return array
+	 */
+	public function add_plugin_row_meta( $plugin_meta, $plugin_file ) {
+		if ( plugin_basename( GDAIIDL_FILE ) !== $plugin_file ) {
+			return $plugin_meta;
+		}
+
+		$plugin_meta[] = '<a href="' . esc_url( 'https://www.paypal.com/paypalme/drissner' ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Donate', 'ai-image-disclosure-labels' ) . '</a>';
+		$plugin_meta[] = '<a href="' . esc_url( 'https://drissner.media/kontakt' ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Support', 'ai-image-disclosure-labels' ) . '</a>';
+
+		return $plugin_meta;
 	}
 }
