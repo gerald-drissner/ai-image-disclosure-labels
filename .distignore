@@ -16,3 +16,6 @@
 /composer.lock
 /package.json
 /package-lock.json
+
+/build
+/ai-image-disclosure-labels.zip
