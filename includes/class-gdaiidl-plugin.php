@@ -11,9 +11,10 @@ final class GDAIIDL_Plugin {
 
 	const OPTION_KEY            = 'gdaiidl_settings';
 	const VERSION_OPTION        = 'gdaiidl_version';
-	const META_FEATURED_ENABLED = '_gdaiidl_featured_enabled';
-	const META_FEATURED_TEXT    = '_gdaiidl_featured_text';
-	const META_AVERAGE_COLOR    = '_gdaiidl_avg_color';
+	const META_FEATURED_ENABLED     = '_gdaiidl_featured_enabled';
+	const META_FEATURED_TEXT        = '_gdaiidl_featured_text';
+	const META_FEATURED_SOURCE_TYPE = '_gdaiidl_featured_source_type';
+	const META_AVERAGE_COLOR        = '_gdaiidl_avg_color';
 
 	/**
 	 * Singleton instance.
@@ -28,6 +29,13 @@ final class GDAIIDL_Plugin {
 	 * @var array|null
 	 */
 	private static $settings_cache = null;
+
+	/**
+	 * Machine-readable ImageObject records collected during front-end rendering.
+	 *
+	 * @var array
+	 */
+	private $machine_readable_images = array();
 
 	/**
 	 * Get the singleton instance.
@@ -135,6 +143,7 @@ final class GDAIIDL_Plugin {
 		add_filter( 'render_block_core/image', array( $this, 'render_image_block_label' ), 10, 2 );
 		add_filter( 'wp_get_attachment_image', array( $this, 'render_featured_attachment_label' ), 20, 5 );
 		add_filter( 'post_thumbnail_html', array( $this, 'render_featured_image_label' ), 20, 5 );
+		add_action( 'wp_footer', array( $this, 'render_machine_readable_source_data' ), 99 );
 
 		add_action( 'admin_menu', array( $this, 'add_settings_page' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
@@ -154,8 +163,10 @@ final class GDAIIDL_Plugin {
 	 */
 	public static function defaults() {
 		return array(
-			'label_text'         => 'AI-generated',
-			'position'           => 'bottom-right',
+			'label_text'               => 'AI-generated',
+			'machine_readable_enabled' => false,
+			'digital_source_type'       => 'generated',
+			'position'                 => 'bottom-right',
 			'preset'             => 'subtle',
 			'background_color'   => '#171717',
 			'background_opacity' => 78,
@@ -182,6 +193,72 @@ final class GDAIIDL_Plugin {
 			'background_color_mode' => 'fixed',
 			'font_family_mode'      => 'inherit',
 			'font_family_custom'    => '',
+		);
+	}
+
+	/**
+	 * Supported standardized digital source types.
+	 *
+	 * The labels follow the IPTC Digital Source Type vocabulary. The URLs are
+	 * the corresponding Schema.org enumeration members used by the
+	 * digitalSourceType property.
+	 *
+	 * @return array
+	 */
+	private function digital_source_types() {
+		return array(
+			'generated' => array(
+				'label' => __( 'Created using generative AI', 'ai-image-disclosure-labels' ),
+				'uri'   => 'https://schema.org/TrainedAlgorithmicMediaDigitalSource',
+			),
+			'edited'    => array(
+				'label' => __( 'Edited using generative AI', 'ai-image-disclosure-labels' ),
+				'uri'   => 'https://schema.org/CompositeWithTrainedAlgorithmicMediaDigitalSource',
+			),
+		);
+	}
+
+	/**
+	 * Validate a digital source type key.
+	 *
+	 * @param mixed  $value         Candidate source type.
+	 * @param string $fallback      Fallback key.
+	 * @param bool   $allow_inherit Whether an empty value is allowed.
+	 * @return string
+	 */
+	private function sanitize_digital_source_type( $value, $fallback = 'generated', $allow_inherit = false ) {
+		$value = is_string( $value ) ? sanitize_key( $value ) : '';
+
+		if ( $allow_inherit && '' === $value ) {
+			return '';
+		}
+
+		$types = $this->digital_source_types();
+
+		return isset( $types[ $value ] ) ? $value : $fallback;
+	}
+
+	/**
+	 * Resolve the effective source type for one marked image.
+	 *
+	 * @param mixed $override Optional per-image source type.
+	 * @return string Empty when machine-readable output is disabled.
+	 */
+	private function resolved_digital_source_type( $override = '' ) {
+		$settings = $this->settings();
+
+		if ( empty( $settings['machine_readable_enabled'] ) ) {
+			return '';
+		}
+
+		$override = $this->sanitize_digital_source_type( $override, '', true );
+
+		if ( '' !== $override ) {
+			return $override;
+		}
+
+		return $this->sanitize_digital_source_type(
+			isset( $settings['digital_source_type'] ) ? $settings['digital_source_type'] : 'generated'
 		);
 	}
 
@@ -643,6 +720,20 @@ final class GDAIIDL_Plugin {
 					},
 				)
 			);
+
+			register_post_meta(
+				$post_type,
+				self::META_FEATURED_SOURCE_TYPE,
+				array(
+					'type'              => 'string',
+					'single'            => true,
+					'show_in_rest'      => false,
+					'sanitize_callback' => 'sanitize_key',
+					'auth_callback'     => static function ( $allowed, $meta_key, $post_id ) {
+						return current_user_can( 'edit_post', (int) $post_id );
+					},
+				)
+			);
 		}
 	}
 
@@ -674,6 +765,11 @@ final class GDAIIDL_Plugin {
 							'type'              => 'string',
 							'default'           => '',
 							'sanitize_callback' => 'sanitize_text_field',
+						),
+						'source_type' => array(
+							'type'              => 'string',
+							'default'           => '',
+							'sanitize_callback' => 'sanitize_key',
 						),
 					),
 				),
@@ -730,7 +826,8 @@ final class GDAIIDL_Plugin {
 	public function rest_update_featured_label( $request ) {
 		$post_id = absint( $request['id'] );
 		$enabled = rest_sanitize_boolean( $request->get_param( 'enabled' ) );
-		$text    = sanitize_text_field( (string) $request->get_param( 'text' ) );
+		$text        = sanitize_text_field( (string) $request->get_param( 'text' ) );
+		$source_type = $this->sanitize_digital_source_type( $request->get_param( 'source_type' ), '', true );
 
 		if ( $enabled ) {
 			$result = update_post_meta( $post_id, self::META_FEATURED_ENABLED, '1' );
@@ -760,6 +857,20 @@ final class GDAIIDL_Plugin {
 			$this->delete_compatible_post_meta( $post_id, self::META_FEATURED_TEXT, 'featured_text' );
 		}
 
+		if ( '' !== $source_type ) {
+			$source_result = update_post_meta( $post_id, self::META_FEATURED_SOURCE_TYPE, $source_type );
+
+			if ( false === $source_result && $source_type !== (string) get_post_meta( $post_id, self::META_FEATURED_SOURCE_TYPE, true ) ) {
+				return new WP_Error(
+					'gdaiidl_source_type_save_failed',
+					__( 'The machine-readable source type could not be saved.', 'ai-image-disclosure-labels' ),
+					array( 'status' => 500 )
+				);
+			}
+		} else {
+			delete_post_meta( $post_id, self::META_FEATURED_SOURCE_TYPE );
+		}
+
 		clean_post_cache( $post_id );
 		$this->maybe_purge_page_cache();
 
@@ -774,8 +885,9 @@ final class GDAIIDL_Plugin {
 	 */
 	private function featured_label_rest_data( $post_id ) {
 		return array(
-			'enabled' => '1' === (string) $this->get_compatible_post_meta( $post_id, self::META_FEATURED_ENABLED, 'featured_enabled' ),
-			'text'    => (string) $this->get_compatible_post_meta( $post_id, self::META_FEATURED_TEXT, 'featured_text' ),
+			'enabled'     => '1' === (string) $this->get_compatible_post_meta( $post_id, self::META_FEATURED_ENABLED, 'featured_enabled' ),
+			'text'        => (string) $this->get_compatible_post_meta( $post_id, self::META_FEATURED_TEXT, 'featured_text' ),
+			'source_type' => $this->sanitize_digital_source_type( get_post_meta( $post_id, self::META_FEATURED_SOURCE_TYPE, true ), '', true ),
 		);
 	}
 
@@ -797,6 +909,10 @@ final class GDAIIDL_Plugin {
 				'text'    => array(
 					'type'        => 'string',
 					'description' => 'Optional per-post label text.',
+				),
+				'source_type' => array(
+					'type'        => 'string',
+					'description' => 'Optional per-post digital source type override.',
 				),
 			),
 		);
@@ -824,6 +940,11 @@ final class GDAIIDL_Plugin {
 		);
 
 		$args['attributes']['gdAiLabelText'] = array(
+			'type'    => 'string',
+			'default' => '',
+		);
+
+		$args['attributes']['gdAiSourceType'] = array(
 			'type'    => 'string',
 			'default' => '',
 		);
@@ -869,12 +990,13 @@ final class GDAIIDL_Plugin {
 			'gdaiidl-editor',
 			'gdaiidlEditorConfig',
 			array(
-				'defaultText'      => $settings['label_text'],
-				'position'         => $settings['position'],
-				'allowedPostTypes' => $this->post_types(),
-				'metaEnabled'      => self::META_FEATURED_ENABLED,
-				'metaText'         => self::META_FEATURED_TEXT,
-				'restPath'         => '/gdaiidl/v1/post/',
+				'defaultText'            => $settings['label_text'],
+				'position'               => $settings['position'],
+				'allowedPostTypes'        => $this->post_types(),
+				'machineReadableEnabled' => ! empty( $settings['machine_readable_enabled'] ),
+				'metaEnabled'             => self::META_FEATURED_ENABLED,
+				'metaText'                => self::META_FEATURED_TEXT,
+				'restPath'                => '/gdaiidl/v1/post/',
 			)
 		);
 
@@ -912,6 +1034,8 @@ final class GDAIIDL_Plugin {
 		$needs_size_filter      = 0 < $minimum_width || 0 < $minimum_text_width;
 		$enable_theme_fallback  = false;
 		$featured_label_text    = '';
+		$featured_attachment_id = 0;
+		$featured_auto_color    = array();
 
 		if ( is_singular( $this->post_types() ) ) {
 			$post_id = get_queried_object_id();
@@ -919,8 +1043,16 @@ final class GDAIIDL_Plugin {
 			if ( $post_id && $this->get_compatible_post_meta( $post_id, self::META_FEATURED_ENABLED, 'featured_enabled' ) ) {
 				$custom_text = $this->get_compatible_post_meta( $post_id, self::META_FEATURED_TEXT, 'featured_text' );
 				$custom_text = is_string( $custom_text ) ? trim( sanitize_text_field( $custom_text ) ) : '';
-				$featured_label_text = '' !== $custom_text ? $custom_text : trim( $settings['label_text'] );
-				$enable_theme_fallback = '' !== $featured_label_text;
+				$featured_label_text    = '' !== $custom_text ? $custom_text : trim( $settings['label_text'] );
+				$enable_theme_fallback  = '' !== $featured_label_text;
+				$featured_attachment_id = (int) get_post_thumbnail_id( $post_id );
+
+				if ( $enable_theme_fallback ) {
+					$this->register_machine_readable_image(
+						$featured_attachment_id,
+						get_post_meta( $post_id, self::META_FEATURED_SOURCE_TYPE, true )
+					);
+				}
 			}
 		}
 
@@ -935,6 +1067,10 @@ final class GDAIIDL_Plugin {
 		 * as a canvas-based rescue path on servers without the GD extension.
 		 */
 		$auto_color = isset( $settings['background_color_mode'] ) && 'auto' === $settings['background_color_mode'];
+
+		if ( $auto_color && $featured_attachment_id > 0 ) {
+			$featured_auto_color = $this->auto_color_data( $featured_attachment_id );
+		}
 
 		if ( ! $needs_size_filter && ! $enable_theme_fallback && ! $auto_color ) {
 			return;
@@ -965,6 +1101,7 @@ final class GDAIIDL_Plugin {
 				'tooltipEnabled'     => ! empty( $settings['icon_tooltip_enabled'] ),
 				'autoColor'          => isset( $settings['background_color_mode'] ) && 'auto' === $settings['background_color_mode'],
 				'backgroundOpacity'  => isset( $settings['background_opacity'] ) ? max( 0, min( 100, (int) $settings['background_opacity'] ) ) : 78,
+				'featuredAutoColor'  => $featured_auto_color,
 				'tooltipButtonLabel' => '' !== $featured_label_text
 					/* translators: %s: the disclosure label text, e.g. "AI-generated". */
 					? sprintf( __( 'Show disclosure: %s', 'ai-image-disclosure-labels' ), $featured_label_text )
@@ -988,12 +1125,19 @@ final class GDAIIDL_Plugin {
 		}
 
 		$custom_text   = isset( $attributes['gdAiLabelText'] ) ? $attributes['gdAiLabelText'] : '';
+		$source_type   = isset( $attributes['gdAiSourceType'] ) ? $attributes['gdAiSourceType'] : '';
 		$attachment_id = isset( $attributes['id'] ) ? (int) $attributes['id'] : 0;
 		$label_html    = $this->label_html( $custom_text, $attachment_id );
 
 		if ( '' === $label_html ) {
 			return $block_content;
 		}
+
+		$this->register_machine_readable_image(
+			$attachment_id,
+			$source_type,
+			$this->extract_image_url( $block_content )
+		);
 
 		$updated = $block_content;
 
@@ -1066,6 +1210,12 @@ final class GDAIIDL_Plugin {
 			return $html;
 		}
 
+		$this->register_machine_readable_image(
+			(int) $attachment_id,
+			get_post_meta( $post_id, self::META_FEATURED_SOURCE_TYPE, true ),
+			$this->extract_image_url( $html )
+		);
+
 		return '<span class="gd-ai-image-frame gd-ai-featured-wrap">' . $html . $label_html . '</span>';
 	}
 
@@ -1100,7 +1250,149 @@ final class GDAIIDL_Plugin {
 			return $html;
 		}
 
+		$this->register_machine_readable_image(
+			(int) $post_thumbnail_id,
+			get_post_meta( $post_id, self::META_FEATURED_SOURCE_TYPE, true ),
+			$this->extract_image_url( $html )
+		);
+
 		return '<span class="gd-ai-image-frame gd-ai-featured-wrap">' . $html . $label_html . '</span>';
+	}
+
+	/**
+	 * Extract the first image URL from rendered markup.
+	 *
+	 * @param string $html Rendered image markup.
+	 * @return string
+	 */
+	private function extract_image_url( $html ) {
+		if ( class_exists( 'WP_HTML_Tag_Processor' ) ) {
+			$processor = new WP_HTML_Tag_Processor( (string) $html );
+
+			if ( $processor->next_tag( 'img' ) ) {
+				return esc_url_raw( (string) $processor->get_attribute( 'src' ) );
+			}
+		}
+
+		if ( preg_match( '/<img\b[^>]*\bsrc=(?:"([^"]+)"|\'([^\']+)\')/i', (string) $html, $matches ) ) {
+			return esc_url_raw( html_entity_decode( ! empty( $matches[1] ) ? $matches[1] : $matches[2], ENT_QUOTES, 'UTF-8' ) );
+		}
+
+		return '';
+	}
+
+	/**
+	 * Return a stable identity URL for an external image.
+	 *
+	 * Cloudflare Images appends a delivery-variant segment after the immutable
+	 * image ID. Different crops and widths are still renditions of the same
+	 * underlying asset, so the final variant segment is ignored for the
+	 * deduplication key. Other URL structures are left untouched.
+	 *
+	 * @param string $url Image URL.
+	 * @return string
+	 */
+	private function machine_readable_identity_url( $url ) {
+		$url   = esc_url_raw( (string) $url );
+		$parts = wp_parse_url( $url );
+
+		if ( ! is_array( $parts ) || empty( $parts['host'] ) || empty( $parts['path'] ) ) {
+			return $url;
+		}
+
+		if ( ! preg_match( '~^(/cdn-cgi/imagedelivery/[^/]+/[^/]+)(?:/[^/?#]+)?$~', $parts['path'], $matches ) ) {
+			return $url;
+		}
+
+		$scheme = ! empty( $parts['scheme'] ) ? $parts['scheme'] : 'https';
+		$port   = isset( $parts['port'] ) ? ':' . (int) $parts['port'] : '';
+
+		return $scheme . '://' . $parts['host'] . $port . $matches[1];
+	}
+
+	/**
+	 * Register one image for the page-level machine-readable JSON-LD graph.
+	 *
+	 * WordPress attachment IDs are used as the primary identity. This keeps a
+	 * full-size image, responsive thumbnail, crop or CDN rendition together as
+	 * one ImageObject without changing any visible image markup. External
+	 * images fall back to a conservative normalized-URL identity.
+	 *
+	 * @param int    $attachment_id WordPress attachment ID when available.
+	 * @param mixed  $source_type   Optional per-image source type override.
+	 * @param string $fallback_url  Image URL for external or unregistered images.
+	 * @return void
+	 */
+	private function register_machine_readable_image( $attachment_id, $source_type = '', $fallback_url = '' ) {
+		if ( is_admin() || wp_doing_ajax() || is_feed() ) {
+			return;
+		}
+
+		$attachment_id = (int) $attachment_id;
+		$source_type   = $this->resolved_digital_source_type( $source_type );
+		$types         = $this->digital_source_types();
+
+		if ( '' === $source_type || ! isset( $types[ $source_type ] ) ) {
+			return;
+		}
+
+		$attachment_url = $attachment_id > 0 ? wp_get_attachment_url( $attachment_id ) : '';
+		$url            = '' !== (string) $attachment_url ? $attachment_url : $fallback_url;
+		$url            = esc_url_raw( (string) $url );
+
+		if ( '' === $url ) {
+			return;
+		}
+
+		if ( $attachment_id > 0 ) {
+			$key         = 'attachment:' . $attachment_id;
+			$identity_url = $url;
+		} else {
+			$identity_url = $this->machine_readable_identity_url( $url );
+			$key          = 'url:' . md5( $identity_url );
+		}
+
+		$this->machine_readable_images[ $key ] = array(
+			'@type'             => 'ImageObject',
+			'@id'               => $identity_url . '#gdaiidl-source',
+			'contentUrl'        => $url,
+			'digitalSourceType' => $types[ $source_type ]['uri'],
+		);
+	}
+
+	/**
+	 * Print one deduplicated Schema.org JSON-LD graph for marked images.
+	 *
+	 * @return void
+	 */
+	public function render_machine_readable_source_data() {
+		if ( empty( $this->machine_readable_images ) ) {
+			return;
+		}
+
+		$data = array(
+			'@context' => 'https://schema.org',
+			'@graph'   => array_values( $this->machine_readable_images ),
+		);
+
+		$json = wp_json_encode(
+			$data,
+			JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+		);
+
+		if ( false === $json ) {
+			return;
+		}
+
+		wp_print_inline_script_tag(
+			$json,
+			array(
+				'type'  => 'application/ld+json',
+				'class' => 'gdaiidl-machine-readable-source',
+			)
+		);
+
+		$this->machine_readable_images = array();
 	}
 
 	/**
@@ -1241,36 +1533,57 @@ final class GDAIIDL_Plugin {
 	}
 
 	/**
-	 * Build inline CSS variables for automatic badge colors.
+	 * Return automatic badge colors for an attachment.
 	 *
-	 * Text color is selected by comparing the contrast ratio of dark and
-	 * light text against the sampled sRGB background color.
+	 * The server-side sample is also passed to the JavaScript-created featured
+	 * image fallback. This avoids relying on canvas access to a cross-origin CDN
+	 * image, which browsers may block even though the image itself is visible.
 	 *
 	 * @param int $attachment_id Attachment ID.
-	 * @return string Empty string when automatic colors are unavailable.
+	 * @return array Empty array when automatic colors are unavailable.
 	 */
-	private function auto_color_style( $attachment_id ) {
+	private function auto_color_data( $attachment_id ) {
 		$settings = $this->settings();
 
 		if ( empty( $settings['background_color_mode'] ) || 'auto' !== $settings['background_color_mode'] ) {
-			return '';
+			return array();
 		}
 
 		$color = $this->attachment_average_color( $attachment_id );
 
 		if ( null === $color ) {
-			return '';
+			return array();
 		}
 
 		$alpha = round( max( 0, min( 100, (int) $settings['background_opacity'] ) ) / 100, 2 );
-		$text  = $this->readable_text_color( $color );
 		$rgb   = $color['r'] . ',' . $color['g'] . ',' . $color['b'];
+		$rgba  = 'rgba(' . $rgb . ',' . $alpha . ')';
+
+		return array(
+			'background' => $rgba,
+			'border'     => $rgba,
+			'text'       => $this->readable_text_color( $color ),
+		);
+	}
+
+	/**
+	 * Build inline CSS variables for automatic badge colors.
+	 *
+	 * @param int $attachment_id Attachment ID.
+	 * @return string Empty string when automatic colors are unavailable.
+	 */
+	private function auto_color_style( $attachment_id ) {
+		$colors = $this->auto_color_data( $attachment_id );
+
+		if ( empty( $colors ) ) {
+			return '';
+		}
 
 		return sprintf(
-			'--gd-ai-label-bg:rgba(%1$s,%2$s);--gd-ai-label-color:%3$s;--gd-ai-label-border-color:rgba(%1$s,%2$s);',
-			$rgb,
-			$alpha,
-			$text
+			'--gd-ai-label-bg:%1$s;--gd-ai-label-color:%2$s;--gd-ai-label-border-color:%3$s;',
+			$colors['background'],
+			$colors['text'],
+			$colors['border']
 		);
 	}
 
@@ -1519,6 +1832,11 @@ final class GDAIIDL_Plugin {
 		$output['label_text'] = isset( $input['label_text'] )
 			? sanitize_text_field( $input['label_text'] )
 			: $defaults['label_text'];
+
+		$output['machine_readable_enabled'] = ! empty( $input['machine_readable_enabled'] );
+		$output['digital_source_type'] = $this->sanitize_digital_source_type(
+			isset( $input['digital_source_type'] ) ? $input['digital_source_type'] : $defaults['digital_source_type']
+		);
 
 		$positions = array( 'top-left', 'top-right', 'bottom-left', 'bottom-right' );
 		$output['position'] = isset( $input['position'] ) && in_array( $input['position'], $positions, true )
@@ -1787,7 +2105,7 @@ final class GDAIIDL_Plugin {
 
 			<div class="gd-ai-notice gd-ai-notice-eu">
 				<strong><?php esc_html_e( 'EU AI Act transparency rules apply from August 2, 2026', 'ai-image-disclosure-labels' ); ?></strong>
-				<p><?php esc_html_e( 'Article 50 of the EU AI Act (Regulation (EU) 2024/1689) includes transparency duties for providers and deployers of certain AI systems, including visible disclosure of deep fakes and certain other AI-generated content. The rules apply from August 2, 2026. This plugin helps you add a visible disclosure to selected images. It does not decide whether a particular image must be labeled, does not add machine-readable markings, and is not legal advice.', 'ai-image-disclosure-labels' ); ?></p>
+				<p><?php esc_html_e( 'Article 50 of the EU AI Act (Regulation (EU) 2024/1689) requires providers of certain generative AI systems to add machine-readable marks to generated or manipulated outputs. Separate disclosure duties apply to deployers in specified cases, including deepfakes and certain public-interest text. This plugin can add a visible label and, if enabled below, a publisher-supplied structured-data declaration. It does not determine your legal obligations, verify the origin of an image or create C2PA Content Credentials, and it is not legal advice.', 'ai-image-disclosure-labels' ); ?></p>
 			</div>
 
 			<?php $gdaiidl_detected_caches = $this->detected_cache_systems(); ?>
@@ -1821,6 +2139,30 @@ final class GDAIIDL_Plugin {
 									maxlength="80"
 								>
 							</label>
+						</section>
+
+						<section class="gd-ai-card">
+							<h2><?php esc_html_e( 'Machine-readable source information', 'ai-image-disclosure-labels' ); ?></h2>
+							<p><?php esc_html_e( 'Optionally add a structured declaration to the HTML source for every image marked by this plugin.', 'ai-image-disclosure-labels' ); ?></p>
+
+							<label class="gd-ai-toggle-field">
+								<input type="checkbox" id="gd-ai-machine-readable-enabled" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[machine_readable_enabled]" value="1" <?php checked( ! empty( $s['machine_readable_enabled'] ) ); ?>>
+								<span>
+									<strong><?php esc_html_e( 'Add machine-readable AI source information to marked images', 'ai-image-disclosure-labels' ); ?></strong>
+									<small><?php esc_html_e( 'Adds a publisher-supplied Schema.org digitalSourceType declaration using the IPTC Digital Source Type vocabulary. It is included in the HTML source and does not change the visible page.', 'ai-image-disclosure-labels' ); ?></small>
+								</span>
+							</label>
+
+							<label class="gd-ai-field gd-ai-field-wide">
+								<span><?php esc_html_e( 'Default digital source type', 'ai-image-disclosure-labels' ); ?></span>
+								<select id="gd-ai-digital-source-type" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[digital_source_type]">
+									<option value="generated" <?php selected( $s['digital_source_type'], 'generated' ); ?>><?php esc_html_e( 'Created using generative AI', 'ai-image-disclosure-labels' ); ?></option>
+									<option value="edited" <?php selected( $s['digital_source_type'], 'edited' ); ?>><?php esc_html_e( 'Edited using generative AI', 'ai-image-disclosure-labels' ); ?></option>
+								</select>
+								<small><?php esc_html_e( 'Used unless a different source type is selected for an individual image.', 'ai-image-disclosure-labels' ); ?></small>
+							</label>
+
+							<p class="description"><strong><?php esc_html_e( 'Important:', 'ai-image-disclosure-labels' ); ?></strong> <?php esc_html_e( 'This is a self-declared transparency signal. It does not modify the image file, create or verify C2PA Content Credentials, prove origin or authenticity, or replace machine-readable markings supplied by the provider of a generative AI system. Legal duties depend on the content, your role and the applicable law.', 'ai-image-disclosure-labels' ); ?></p>
 						</section>
 
 						<section class="gd-ai-card">

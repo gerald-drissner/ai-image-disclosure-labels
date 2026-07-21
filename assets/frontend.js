@@ -13,6 +13,9 @@
 	const tooltipEnabled = !! config.tooltipEnabled;
 	const autoColor = !! config.autoColor;
 	const backgroundOpacity = Math.max( 0, Math.min( 100, parseInt( config.backgroundOpacity, 10 ) || 78 ) ) / 100;
+	const featuredAutoColor = config.featuredAutoColor && typeof config.featuredAutoColor === 'object'
+		? config.featuredAutoColor
+		: null;
 	const coloredLabels = new WeakSet();
 
 	/*
@@ -66,6 +69,27 @@
 		return contrastRatio( backgroundLuminance, darkLuminance ) >= contrastRatio( backgroundLuminance, lightLuminance )
 			? '#111111'
 			: '#ffffff';
+	}
+
+	function applyProvidedAutoColor( label, colors ) {
+		if ( ! label || ! colors || typeof colors !== 'object' ) {
+			return false;
+		}
+
+		const background = typeof colors.background === 'string' ? colors.background : '';
+		const border = typeof colors.border === 'string' ? colors.border : background;
+		const text = typeof colors.text === 'string' ? colors.text : '';
+
+		if ( ! background || ! text ) {
+			return false;
+		}
+
+		label.style.setProperty( '--gd-ai-label-bg', background );
+		label.style.setProperty( '--gd-ai-label-border-color', border );
+		label.style.setProperty( '--gd-ai-label-color', text );
+		coloredLabels.add( label );
+
+		return true;
 	}
 
 	function applyAutoColor( label, image ) {
@@ -353,6 +377,7 @@
 		label.setAttribute( 'role', 'note' );
 		label.setAttribute( 'aria-label', config.labelText );
 		label.setAttribute( 'data-gd-ai-featured-label', '1' );
+		applyProvidedAutoColor( label, featuredAutoColor );
 
 		const iconWrap = document.createElement( 'span' );
 		iconWrap.className = 'gd-ai-label-icon';

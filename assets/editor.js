@@ -15,6 +15,7 @@
 	const createHigherOrderComponent = wp.compose.createHigherOrderComponent;
 	const InspectorControls = wp.blockEditor.InspectorControls;
 	const Notice = wp.components.Notice;
+	const SelectControl = wp.components.SelectControl;
 	const PanelBody = wp.components.PanelBody;
 	const Spinner = wp.components.Spinner;
 	const TextControl = wp.components.TextControl;
@@ -40,6 +41,10 @@
 				gdAiLabelText: {
 					type: 'string',
 					default: ''
+				},
+				gdAiSourceType: {
+					type: 'string',
+					default: ''
 				}
 			} )
 		} );
@@ -60,6 +65,7 @@
 
 				const enabled = !! props.attributes.gdAiLabel;
 				const customText = props.attributes.gdAiLabelText || '';
+				const sourceType = props.attributes.gdAiSourceType || '';
 
 				return el(
 					Fragment,
@@ -89,6 +95,20 @@
 								help: __( 'Leave empty to use the default text from the plugin settings.', 'ai-image-disclosure-labels' ),
 								onChange: function ( value ) {
 									props.setAttributes( { gdAiLabelText: value } );
+								},
+								__nextHasNoMarginBottom: true
+							} ),
+							enabled && config.machineReadableEnabled && el( SelectControl, {
+								label: __( 'AI source type', 'ai-image-disclosure-labels' ),
+								value: sourceType,
+								options: [
+									{ label: __( 'Use global default', 'ai-image-disclosure-labels' ), value: '' },
+									{ label: __( 'Created using generative AI', 'ai-image-disclosure-labels' ), value: 'generated' },
+									{ label: __( 'Edited using generative AI', 'ai-image-disclosure-labels' ), value: 'edited' }
+								],
+								help: __( 'Sets the machine-readable source type for this image. It does not change the visible label.', 'ai-image-disclosure-labels' ),
+								onChange: function ( value ) {
+									props.setAttributes( { gdAiSourceType: value } );
 								},
 								__nextHasNoMarginBottom: true
 							} )
@@ -160,6 +180,7 @@
 		const postType = editorContext.postType;
 		const [ enabled, setEnabled ] = useState( false );
 		const [ customText, setCustomText ] = useState( '' );
+		const [ sourceType, setSourceType ] = useState( '' );
 		const [ loading, setLoading ] = useState( true );
 		const [ saving, setSaving ] = useState( false );
 		const [ saved, setSaved ] = useState( false );
@@ -206,8 +227,13 @@
 					? response.text
 					: '';
 
+				const nextSourceType = response && typeof response.source_type === 'string'
+					? response.source_type
+					: '';
+
 				setEnabled( !! ( response && response.enabled ) );
 				setCustomText( nextText );
+				setSourceType( nextSourceType );
 				lastSavedTextRef.current = nextText;
 			} ).catch( function ( requestError ) {
 				if ( ! active || ! mountedRef.current ) {
@@ -240,7 +266,7 @@
 			}, 2200 );
 		}
 
-		function persist( nextEnabled, nextText ) {
+		function persist( nextEnabled, nextText, nextSourceType ) {
 			if ( ! postId ) {
 				return Promise.reject( new Error( __( 'The post ID is not available yet.', 'ai-image-disclosure-labels' ) ) );
 			}
@@ -256,7 +282,8 @@
 				method: 'POST',
 				data: {
 					enabled: !! nextEnabled,
-					text: nextText || ''
+					text: nextText || '',
+					source_type: nextSourceType || ''
 				}
 			} ).then( function ( response ) {
 				if ( ! mountedRef.current || sequence !== requestSequenceRef.current ) {
@@ -266,9 +293,13 @@
 				const savedText = response && typeof response.text === 'string'
 					? response.text
 					: '';
+				const savedSourceType = response && typeof response.source_type === 'string'
+					? response.source_type
+					: '';
 
 				setEnabled( !! ( response && response.enabled ) );
 				setCustomText( savedText );
+				setSourceType( savedSourceType );
 				lastSavedTextRef.current = savedText;
 				showSavedState();
 				return response;
@@ -294,7 +325,7 @@
 			const next = !! value;
 			setEnabled( next );
 
-			persist( next, customText ).catch( function () {
+			persist( next, customText, sourceType ).catch( function () {
 				if ( mountedRef.current ) {
 					setEnabled( previous );
 				}
@@ -307,7 +338,7 @@
 
 			textTimerRef.current = window.setTimeout( function () {
 				if ( value !== lastSavedTextRef.current ) {
-					persist( enabled, value ).catch( function () {} );
+					persist( enabled, value, sourceType ).catch( function () {} );
 				}
 			}, 500 );
 		}
@@ -316,8 +347,19 @@
 			window.clearTimeout( textTimerRef.current );
 
 			if ( customText !== lastSavedTextRef.current ) {
-				persist( enabled, customText ).catch( function () {} );
+				persist( enabled, customText, sourceType ).catch( function () {} );
 			}
+		}
+
+		function changeSourceType( value ) {
+			const previous = sourceType;
+			setSourceType( value );
+
+			persist( enabled, customText, value ).catch( function () {
+				if ( mountedRef.current ) {
+					setSourceType( previous );
+				}
+			} );
 		}
 
 		if ( config.allowedPostTypes.indexOf( postType ) === -1 ) {
@@ -351,6 +393,18 @@
 				onChange: changeText,
 				onBlur: saveTextOnBlur,
 				help: __( 'Leave empty to use the default text.', 'ai-image-disclosure-labels' ),
+				__nextHasNoMarginBottom: true
+			} ),
+			! loading && enabled && config.machineReadableEnabled && el( SelectControl, {
+				label: __( 'AI source type', 'ai-image-disclosure-labels' ),
+				value: sourceType,
+				options: [
+					{ label: __( 'Use global default', 'ai-image-disclosure-labels' ), value: '' },
+					{ label: __( 'Created using generative AI', 'ai-image-disclosure-labels' ), value: 'generated' },
+					{ label: __( 'Edited using generative AI', 'ai-image-disclosure-labels' ), value: 'edited' }
+				],
+				onChange: changeSourceType,
+				help: __( 'Sets the machine-readable source type for the featured image. It does not change the visible label.', 'ai-image-disclosure-labels' ),
 				__nextHasNoMarginBottom: true
 			} ),
 			! loading && el(

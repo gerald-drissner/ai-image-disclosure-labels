@@ -21,6 +21,7 @@ function gdaiidl_uninstall_site() {
 
 	delete_post_meta_by_key( '_gdaiidl_featured_enabled' );
 	delete_post_meta_by_key( '_gdaiidl_featured_text' );
+	delete_post_meta_by_key( '_gdaiidl_featured_source_type' );
 	delete_post_meta_by_key( '_gdaiidl_avg_color' );
 
 	/* Remove data left by GitHub releases published before version 2.0.1. */

@@ -4,13 +4,15 @@
   <img src=".wordpress-org/icon-256x256.png" width="160" height="160" alt="AI Image Disclosure & Labels icon">
 </p>
 
-A WordPress plugin for adding visible AI disclosure labels to selected Gutenberg images and featured images.
+A WordPress plugin for adding visible AI disclosure labels and optional machine-readable source information to selected Gutenberg images and featured images.
 
 The plugin does nothing automatically. Editors explicitly decide which images receive a label.
 
 ## Features
 
 - Per-image switch for Gutenberg Image blocks.
+- Optional machine-readable Schema.org `digitalSourceType` declarations using standardized IPTC source categories.
+- Global default and per-image source type for content created or edited using generative AI.
 - Separate switch for post, page and supported custom-post-type featured images.
 - Full text labels on large images.
 - Compact AI symbols on medium images.
@@ -52,7 +54,7 @@ All thresholds are configurable.
 
 Article 50 of Regulation (EU) 2024/1689 includes transparency duties for providers and deployers of certain AI systems, including visible disclosure of deep fakes and certain other AI-generated content. The relevant transparency rules apply from 2 August 2026.
 
-This plugin helps add a visible disclosure. It does not determine whether a particular image must be labelled, does not add machine-readable provenance or content credentials, and is not legal advice.
+This plugin helps add a visible disclosure and can optionally publish a self-declared Schema.org `digitalSourceType` value in the page source. It does not determine whether a particular image must be labelled, modify the image file, create or verify C2PA Content Credentials, prove origin or authenticity, or replace provider-supplied machine-readable markings. It is not legal advice.
 
 ## Development
 
@@ -62,7 +64,7 @@ The WordPress.org plugin slug and translation domain are:
 ai-image-disclosure-labels
 ```
 
-Plugin-owned PHP globals, option names, metadata keys, custom hooks, REST routes, JavaScript configuration objects, enqueue handles, settings slugs and editor registration identifiers use the unique `gdaiidl` prefix. Earlier GitHub settings and metadata are migrated automatically. Existing serialized block attributes (`gdAiLabel` and `gdAiLabelText`) and established `gd-ai-*` CSS selectors remain unchanged for backward compatibility with saved posts and custom styling.
+Plugin-owned PHP globals, option names, metadata keys, custom hooks, REST routes, JavaScript configuration objects, enqueue handles, settings slugs and editor registration identifiers use the unique `gdaiidl` prefix. Earlier GitHub settings and metadata are migrated automatically. Existing serialized block attributes (`gdAiLabel` and `gdAiLabelText`) and established `gd-ai-*` CSS selectors remain unchanged for backward compatibility with saved posts and custom styling. Version 2.0.4 adds the optional `gdAiSourceType` block attribute and `_gdaiidl_featured_source_type` metadata key.
 
 Run the official Plugin Check workflow before each release and review every reported error and warning.
 
