@@ -27,7 +27,9 @@ jobs:
           tools: wp-cli
 
       - name: Install WP-CLI dist-archive command
-        run: wp package install wp-cli/dist-archive-command:3.1.0
+        env:
+          COMPOSER_AUTH: "{}"
+        run: wp package install wp-cli/dist-archive-command:v3.1.0 --no-interaction
 
       - name: Build production plugin package
         run: |
