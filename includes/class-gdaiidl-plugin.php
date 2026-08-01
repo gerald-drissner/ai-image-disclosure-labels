@@ -187,6 +187,9 @@ final class GDAIIDL_Plugin {
 			'icon_style'          => 'monogram',
 			'custom_icon_id'       => 0,
 			'custom_selectors'     => '',
+			'location_rules_enabled' => false,
+			'icon_only_selectors'    => '',
+			'hidden_selectors'       => '',
 			'icon_size_value'      => 16,
 			'icon_size_unit'       => 'px',
 			'icon_tooltip_enabled'  => false,
@@ -598,6 +601,23 @@ final class GDAIIDL_Plugin {
 		$post_types = array_values( array_unique( array_filter( $post_types, 'post_type_exists' ) ) );
 
 		return $post_types ? $post_types : array( 'post', 'page' );
+	}
+
+
+	/**
+	 * Convert a newline-separated selector setting to a compact array.
+	 *
+	 * @param string $value Saved selector list.
+	 * @return array
+	 */
+	private function selector_lines( $value ) {
+		if ( ! is_string( $value ) || '' === trim( $value ) ) {
+			return array();
+		}
+
+		$selectors = array_values( array_unique( array_filter( array_map( 'trim', explode( "\n", $value ) ) ) ) );
+
+		return array_slice( $selectors, 0, 30 );
 	}
 
 	/**
@@ -1032,6 +1052,7 @@ final class GDAIIDL_Plugin {
 		$minimum_width          = isset( $settings['minimum_image_width'] ) ? (int) $settings['minimum_image_width'] : 0;
 		$minimum_text_width     = isset( $settings['minimum_text_width'] ) ? (int) $settings['minimum_text_width'] : 0;
 		$needs_size_filter      = 0 < $minimum_width || 0 < $minimum_text_width;
+		$location_rules_enabled = ! empty( $settings['location_rules_enabled'] );
 		$enable_theme_fallback  = false;
 		$featured_label_text    = '';
 		$featured_attachment_id = 0;
@@ -1072,7 +1093,7 @@ final class GDAIIDL_Plugin {
 			$featured_auto_color = $this->auto_color_data( $featured_attachment_id );
 		}
 
-		if ( ! $needs_size_filter && ! $enable_theme_fallback && ! $auto_color ) {
+		if ( ! $needs_size_filter && ! $enable_theme_fallback && ! $auto_color && ! $location_rules_enabled ) {
 			return;
 		}
 
@@ -1096,6 +1117,9 @@ final class GDAIIDL_Plugin {
 				'featuredFallback'   => $enable_theme_fallback,
 				'iconHtml'           => $this->icon_markup( isset( $settings['icon_style'] ) ? $settings['icon_style'] : 'monogram' ),
 				'featuredSelectors'  => $this->featured_selectors(),
+				'locationRulesEnabled' => $location_rules_enabled,
+				'iconOnlySelectors'    => $this->selector_lines( isset( $settings['icon_only_selectors'] ) ? $settings['icon_only_selectors'] : '' ),
+				'hiddenSelectors'      => $this->selector_lines( isset( $settings['hidden_selectors'] ) ? $settings['hidden_selectors'] : '' ),
 				'iconSizeValue'      => isset( $settings['icon_size_value'] ) ? (float) $settings['icon_size_value'] : 16,
 				'iconSizeUnit'       => isset( $settings['icon_size_unit'] ) ? $settings['icon_size_unit'] : 'px',
 				'tooltipEnabled'     => ! empty( $settings['icon_tooltip_enabled'] ),
@@ -1187,16 +1211,23 @@ final class GDAIIDL_Plugin {
 			wp_doing_ajax() ||
 			is_feed() ||
 			false !== strpos( $html, 'gd-ai-featured-wrap' ) ||
-			false === strpos( $html, 'wp-post-image' ) ||
-			! is_singular( $this->post_types() )
+			false === strpos( $html, 'wp-post-image' )
 		) {
 			return $html;
 		}
 
-		$post_id = get_queried_object_id();
+		/*
+		 * On singular views the queried object is authoritative. In post loops,
+		 * query blocks and archive cards, get_the_ID() identifies the post whose
+		 * image is currently being rendered. This lets themes that call
+		 * wp_get_attachment_image() directly receive the same disclosure as
+		 * themes that use get_the_post_thumbnail().
+		 */
+		$post_id = is_singular( $this->post_types() ) ? get_queried_object_id() : get_the_ID();
 
 		if (
 			! $post_id ||
+			! in_array( get_post_type( $post_id ), $this->post_types(), true ) ||
 			(int) $attachment_id !== (int) get_post_thumbnail_id( $post_id ) ||
 			! $this->get_compatible_post_meta( $post_id, self::META_FEATURED_ENABLED, 'featured_enabled' )
 		) {
@@ -1974,6 +2005,27 @@ final class GDAIIDL_Plugin {
 			$output['custom_selectors'] = implode( "\n", $lines );
 		}
 
+
+		$output['location_rules_enabled'] = ! empty( $input['location_rules_enabled'] );
+
+		foreach ( array( 'icon_only_selectors', 'hidden_selectors' ) as $selector_key ) {
+			$output[ $selector_key ] = '';
+
+			if ( isset( $input[ $selector_key ] ) && is_string( $input[ $selector_key ] ) ) {
+				$lines = array_map( 'sanitize_text_field', explode( "\n", $input[ $selector_key ] ) );
+				$lines = array_values( array_unique( array_filter( array_map( 'trim', $lines ) ) ) );
+				$lines = array_slice( $lines, 0, 30 );
+				$lines = array_filter(
+					$lines,
+					static function ( $line ) {
+						return strlen( $line ) <= 240 && false === strpos( $line, '<' ) && false === strpos( $line, '{' );
+					}
+				);
+
+				$output[ $selector_key ] = implode( "\n", $lines );
+			}
+		}
+
 		if ( $output['minimum_text_width'] > 0 && $output['minimum_text_width'] < $output['minimum_image_width'] ) {
 			$output['minimum_text_width'] = $output['minimum_image_width'];
 		}
@@ -2361,6 +2413,33 @@ final class GDAIIDL_Plugin {
 									</select>
 								</label>
 							</div>
+						</section>
+
+
+						<section class="gd-ai-card">
+							<h2><?php esc_html_e( 'Location-specific display', 'ai-image-disclosure-labels' ); ?></h2>
+							<p><?php esc_html_e( 'Use these optional rules when a full text label would be too prominent in a particular layout, or when a disclosure would not fit at all. The rules only change disclosures that already exist; they never mark an image as AI-generated. The normal responsive display remains unchanged everywhere that does not match a rule.', 'ai-image-disclosure-labels' ); ?></p>
+							<label class="gd-ai-toggle-field">
+								<input type="checkbox" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[location_rules_enabled]" value="1" <?php checked( ! empty( $s['location_rules_enabled'] ) ); ?>>
+								<span>
+									<strong><?php esc_html_e( 'Enable selector-based display rules', 'ai-image-disclosure-labels' ); ?></strong>
+									<small><?php esc_html_e( 'Apply icon-only or hidden overrides inside selected page elements. Full labels remain the default elsewhere.', 'ai-image-disclosure-labels' ); ?></small>
+								</span>
+							</label>
+
+							<label class="gd-ai-field gd-ai-field-wide">
+								<span><?php esc_html_e( 'Always show symbol only', 'ai-image-disclosure-labels' ); ?></span>
+								<textarea name="<?php echo esc_attr( self::OPTION_KEY ); ?>[icon_only_selectors]" rows="4" placeholder="body.home .ai-label-disclosure-symbol-only" spellcheck="false"><?php echo esc_textarea( $s['icon_only_selectors'] ); ?></textarea>
+							</label>
+							<p class="description"><?php esc_html_e( 'Enter one CSS selector per line. Use this for large hero cards, overlay tiles or other places where the text could suggest that the surrounding article or section was AI-generated. A selector may target the image, its label frame or any parent container.', 'ai-image-disclosure-labels' ); ?></p>
+							<p class="description"><?php esc_html_e( 'For a stable editor-controlled rule, add a custom class such as “ai-label-disclosure-symbol-only” to the outer Group, Cover, Query or layout container that contains the marked image. Enter the class without a dot in the block editor, but as “.ai-label-disclosure-symbol-only” here. Prefix it with a page body class, for example “body.home .ai-label-disclosure-symbol-only”, when it should apply only on the posts homepage.', 'ai-image-disclosure-labels' ); ?></p>
+							<p class="description"><?php esc_html_e( 'Prefer a custom layout class over post IDs, attachment IDs or automatically generated content classes. Those identifiers can change when a different post or image is displayed.', 'ai-image-disclosure-labels' ); ?></p>
+
+							<label class="gd-ai-field gd-ai-field-wide">
+								<span><?php esc_html_e( 'Hide label completely', 'ai-image-disclosure-labels' ); ?></span>
+								<textarea name="<?php echo esc_attr( self::OPTION_KEY ); ?>[hidden_selectors]" rows="3" placeholder="body.home .very-small-thumbnail-list" spellcheck="false"><?php echo esc_textarea( $s['hidden_selectors'] ); ?></textarea>
+							</label>
+							<p class="description"><?php esc_html_e( 'Use hidden rules sparingly, normally only where even the compact symbol cannot be displayed clearly. Hiding a disclosure removes the visible notice in that location. Hidden rules take priority when an element matches both lists.', 'ai-image-disclosure-labels' ); ?></p>
 						</section>
 
 						<section class="gd-ai-card">

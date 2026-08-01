@@ -5,7 +5,7 @@ Tags: ai image, ai generated content, image disclosure, content transparency, eu
 Requires at least: 6.7
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 2.0.4
+Stable tag: 2.1.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -29,6 +29,8 @@ Article 50 of the EU AI Act distinguishes between providers and deployers of AI 
 * Global default and per-image source type: created using generative AI or edited using generative AI.
 * Four positions and three design presets, plus detailed design controls with live preview.
 * Responsive behavior based on the actually rendered image width: hide the label on tiny thumbnails, show a compact AI symbol on medium images, and the full text label on large images.
+* Location-specific display rules: force icon-only mode or hide an existing disclosure inside selected page areas by using CSS selectors.
+* Featured-image support across homepages, archives, query blocks, cards and post loops, including changing or randomly selected posts.
 * Three built-in SVG symbols (AI Monogram, Sparkle, Chip) plus a custom PNG/SVG symbol from the Media Library.
 * Symbol size in pixels or as a percentage of the rendered image width.
 * Optional disclosure popover for compact symbols: hover or keyboard focus on desktop, tap-to-toggle on touch devices.
@@ -78,6 +80,18 @@ No. It does not modify the image file, create or verify Content Credentials, or 
 
 Open Settings > AI Image Labels > Theme integration and add the CSS selector of your theme's featured image (one per line), for example `.hero-media img.wp-post-image`. Developers can also use the `gdaiidl_featured_selectors` filter.
 
+= How do location-specific display rules work? =
+
+Enable the rules under Settings > AI Image Labels > Location-specific display. Add one CSS selector per line. An icon-only rule changes an existing disclosure in the matched area to the compact symbol; a hidden rule removes that visible disclosure in the matched area. These rules never mark an image as AI-generated. The image or featured image must already have its disclosure enabled.
+
+For a stable editor-controlled setup, add a custom class such as `ai-label-disclosure-symbol-only` to the outer Group, Cover, Query or layout container. Enter the class name without a dot in the block editor, then enter `.ai-label-disclosure-symbol-only` in the plugin setting. To restrict it to the posts homepage, use `body.home .ai-label-disclosure-symbol-only`.
+
+Avoid post IDs, attachment IDs and generated content-specific classes because they may change when a new, queried or randomly selected post is displayed.
+
+= When should I use icon-only or hidden rules? =
+
+Use icon-only mode where a full label would dominate a hero card, overlay tile or other prominent layout and could be misunderstood as describing the whole article or section. Use hidden rules only when even the compact symbol cannot be displayed clearly. Hidden rules remove the visible disclosure in that location, so use them sparingly.
+
 = Can visitors open the text behind a compact symbol? =
 
 Yes. Enable the optional compact-symbol disclosure in Settings. On desktop, the text appears on hover or keyboard focus. On touch devices, visitors can tap the symbol to open it and tap again or elsewhere to close it.
@@ -103,6 +117,20 @@ Yes. Choose "Custom symbol" and select a PNG or SVG file from the Media Library.
 For support, visit [drissner.media/kontakt](https://drissner.media/kontakt). If the plugin is useful to you, you can support its development through [PayPal](https://www.paypal.com/paypalme/drissner).
 
 == Changelog ==
+
+= 2.1.2 =
+* Finalized location-specific display documentation and clarified that selector rules modify existing disclosures only; they never mark images automatically.
+* Documented the recommended custom-class workflow, homepage scoping and the difference between icon-only and hidden rules.
+* Confirmed featured-image disclosure handling across homepages, archives, query blocks, cards and post loops.
+
+= 2.1.1 =
+* Fixed disclosures for marked featured images rendered inside archive cards, query blocks and post loops through direct attachment-image calls.
+* Each featured image is now matched to the post currently being rendered, including changing and randomly selected posts.
+* Reworked the location-rule instructions with generic examples and clearer usage guidance.
+
+= 2.1.0 =
+* Added selector-based icon-only and hidden display rules for specific page locations.
+* Added neutral guidance for page-scoped selector rules and custom editor classes.
 
 = 2.0.4 =
 * Added optional machine-readable Schema.org `digitalSourceType` declarations for marked images.

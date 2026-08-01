@@ -1,5 +1,24 @@
 # Changelog
 
+## 2.1.2
+
+- Finalized the user documentation for location-specific icon-only and hidden display rules.
+- Clarified in the settings and documentation that location rules modify existing disclosures only and never mark images automatically.
+- Documented the recommended custom-class workflow, homepage scoping and stable-selector guidance for changing, queried and randomly selected posts.
+- Confirmed featured-image disclosure handling across homepages, archives, query blocks, cards and post loops.
+
+## 2.1.1
+
+- Fixed featured-image disclosures in archive cards, query blocks and other post loops when a theme renders the thumbnail through `wp_get_attachment_image()` instead of the standard post-thumbnail function.
+- Ensured each rendered featured image is checked against the metadata of its own post, so changing or randomly selected posts receive the correct disclosure without post-specific selectors.
+- Rewrote the location-rule guidance with neutral, reusable examples and clearer advice on icon-only versus hidden rules.
+
+
+## 2.1.0
+- Added selector-based location rules for icon-only and fully hidden disclosure labels.
+- Added guidance for page-scoped, selector-based display rules.
+- Location rules safely override responsive width logic and support dynamically inserted content.
+
 ## 2.0.4
 
 - Added optional machine-readable Schema.org `digitalSourceType` declarations for marked images.

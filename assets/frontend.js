@@ -12,6 +12,9 @@
 	const iconSizeUnit = config.iconSizeUnit === 'percent' ? 'percent' : 'px';
 	const tooltipEnabled = !! config.tooltipEnabled;
 	const autoColor = !! config.autoColor;
+	const locationRulesEnabled = !! config.locationRulesEnabled;
+	const iconOnlySelectors = Array.isArray( config.iconOnlySelectors ) ? config.iconOnlySelectors : [];
+	const hiddenSelectors = Array.isArray( config.hiddenSelectors ) ? config.hiddenSelectors : [];
 	const backgroundOpacity = Math.max( 0, Math.min( 100, parseInt( config.backgroundOpacity, 10 ) || 78 ) ) / 100;
 	const featuredAutoColor = config.featuredAutoColor && typeof config.featuredAutoColor === 'object'
 		? config.featuredAutoColor
@@ -223,12 +226,47 @@
 		} );
 	}
 
+
+	function matchesLocationSelector( label, selectors ) {
+		if ( ! locationRulesEnabled || ! label || ! selectors.length ) {
+			return false;
+		}
+
+		const frame = label.closest( '.gd-ai-image-frame, .gd-ai-featured-theme-fallback' ) || label;
+
+		for ( let index = 0; index < selectors.length; index += 1 ) {
+			try {
+				if ( frame.matches( selectors[ index ] ) || frame.closest( selectors[ index ] ) ) {
+					return true;
+				}
+			} catch ( error ) {
+				/* Ignore invalid selectors rather than breaking all labels. */
+			}
+		}
+
+		return false;
+	}
+
+	function getLocationMode( label ) {
+		if ( matchesLocationSelector( label, hiddenSelectors ) ) {
+			return 'hidden';
+		}
+
+		if ( matchesLocationSelector( label, iconOnlySelectors ) ) {
+			return 'icon';
+		}
+
+		return '';
+	}
+
 	function syncTooltipForWidth( label, renderedWidth ) {
 		if ( ! tooltipEnabled || ! label || renderedWidth <= 0 ) {
 			return;
 		}
 
-		if ( getModeForWidth( renderedWidth ) !== 'icon' ) {
+		const locationMode = getLocationMode( label );
+
+		if ( ( locationMode || getModeForWidth( renderedWidth ) ) !== 'icon' ) {
 			setTooltipOpen( label, false );
 		}
 	}
@@ -254,13 +292,15 @@
 
 		syncTooltipForWidth( label, renderedWidth );
 
-		if ( frameUsesContainerQueries( label ) ) {
+		const locationMode = getLocationMode( label );
+
+		if ( ! locationMode && frameUsesContainerQueries( label ) ) {
 			return;
 		}
 
 		setFallbackIconSize( label, renderedWidth );
 
-		const nextMode = getModeForWidth( renderedWidth );
+		const nextMode = locationMode || getModeForWidth( renderedWidth );
 		label.classList.remove( 'gd-ai-label-size-hidden', 'gd-ai-label-size-icon', 'gd-ai-label-size-text' );
 
 		if ( nextMode === 'hidden' ) {
@@ -283,7 +323,7 @@
 		observedLabels.add( label );
 		initializeTooltip( label );
 
-		if ( ! needsSizeLogic && ! tooltipEnabled && ! autoColor ) {
+		if ( ! needsSizeLogic && ! tooltipEnabled && ! autoColor && ! locationRulesEnabled ) {
 			return;
 		}
 
@@ -416,7 +456,7 @@
 	}
 
 	function initialize() {
-		if ( ( needsSizeLogic || tooltipEnabled || autoColor ) && 'ResizeObserver' in window ) {
+		if ( ( needsSizeLogic || tooltipEnabled || autoColor || locationRulesEnabled ) && 'ResizeObserver' in window ) {
 			resizeObserver = new ResizeObserver( function ( entries ) {
 				entries.forEach( function ( entry ) {
 					const image = entry.target;
@@ -434,7 +474,7 @@
 		addFeaturedLabel();
 		observeAllLabels( document );
 
-		if ( ( needsSizeLogic || tooltipEnabled || autoColor ) && ! resizeObserver ) {
+		if ( ( needsSizeLogic || tooltipEnabled || autoColor || locationRulesEnabled ) && ! resizeObserver ) {
 			window.addEventListener( 'resize', function () {
 				window.clearTimeout( resizeTimer );
 				resizeTimer = window.setTimeout( function () {

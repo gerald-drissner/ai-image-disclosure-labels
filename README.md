@@ -21,6 +21,8 @@ The plugin does nothing automatically. Editors explicitly decide which images re
 - Three built-in SVG symbols plus a custom PNG or SVG from the Media Library.
 - Automatic badge colors derived from the image, with readable light or dark text.
 - Three design presets and detailed visual controls.
+- Location-specific icon-only and hidden rules using stable CSS selectors.
+- Featured-image handling across homepages, archives, query blocks, cards and post loops.
 - Theme integration through settings and developer filters.
 - Cache clearing integrations for common WordPress caching plugins.
 - No Google Fonts or other remote font requests.
@@ -49,6 +51,19 @@ The plugin does nothing automatically. Editors explicitly decide which images re
 | At or above the text threshold | Full disclosure text |
 
 All thresholds are configurable.
+
+## Location-specific display rules
+
+The optional location rules modify how an existing disclosure is displayed inside selected page areas. They do not mark images automatically.
+
+A typical editor-controlled setup is:
+
+1. Add `ai-label-disclosure-symbol-only` to the outer Group, Cover, Query or layout container in the block editor. Enter the class name there without a leading dot.
+2. Enable **Location-specific display** in the plugin settings.
+3. Add `.ai-label-disclosure-symbol-only` to the icon-only selector field.
+4. To limit the rule to the posts homepage, use `body.home .ai-label-disclosure-symbol-only`.
+
+Use icon-only mode for prominent hero cards, overlay tiles and similar layouts where the full text label could be mistaken for a statement about the whole article or section. Use hidden rules only when even the compact symbol cannot fit clearly. Avoid post IDs, attachment IDs and generated content-specific classes because they may change as queried or random content changes.
 
 ## EU AI Act note
 
