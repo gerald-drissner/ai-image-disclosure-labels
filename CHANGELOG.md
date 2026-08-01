@@ -1,4 +1,8 @@
 # Changelog
+## 2.1.3
+- Added a recommended performance option that loads frontend CSS and JavaScript only on pages containing disclosure labels.
+- Added automatic late-loading safeguards for disclosures rendered by Query blocks, post loops, themes and page builders.
+- Added an explicit defer loading strategy for the frontend script.
 
 ## 2.1.2
 

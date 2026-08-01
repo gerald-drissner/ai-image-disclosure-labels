@@ -38,6 +38,13 @@ final class GDAIIDL_Plugin {
 	private $machine_readable_images = array();
 
 	/**
+	 * Whether the front-end asset configuration has already been prepared.
+	 *
+	 * @var bool
+	 */
+	private $frontend_assets_prepared = false;
+
+	/**
 	 * Get the singleton instance.
 	 *
 	 * @return GDAIIDL_Plugin
@@ -139,6 +146,7 @@ final class GDAIIDL_Plugin {
 
 		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_editor_assets' ) );
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_frontend_assets' ), 99 );
+		add_action( 'wp_footer', array( $this, 'print_late_frontend_styles' ), 1 );
 
 		add_filter( 'render_block_core/image', array( $this, 'render_image_block_label' ), 10, 2 );
 		add_filter( 'wp_get_attachment_image', array( $this, 'render_featured_attachment_label' ), 20, 5 );
@@ -165,6 +173,7 @@ final class GDAIIDL_Plugin {
 		return array(
 			'label_text'               => 'AI-generated',
 			'machine_readable_enabled' => false,
+			'load_assets_only_when_needed' => true,
 			'digital_source_type'       => 'generated',
 			'position'                 => 'bottom-right',
 			'preset'             => 'subtle',
@@ -1033,22 +1042,141 @@ final class GDAIIDL_Plugin {
 	}
 
 	/**
-	 * Enqueue front-end CSS.
+	 * Register front-end assets and enqueue them when the current page needs them.
+	 *
+	 * The performance option performs an early scan of the queried posts. A second
+	 * safeguard in label_html() enqueues the assets when a disclosure is rendered
+	 * later by a Query block, theme loop or other dynamic template.
 	 *
 	 * @return void
 	 */
 	public function enqueue_frontend_assets() {
+		$this->register_frontend_assets();
+
 		$settings = $this->settings();
 
-		wp_enqueue_style(
-			'gdaiidl-frontend',
-			GDAIIDL_URL . 'assets/frontend.css',
-			array(),
-			GDAIIDL_VERSION
-		);
+		if ( ! empty( $settings['load_assets_only_when_needed'] ) && ! $this->page_may_contain_disclosure() ) {
+			return;
+		}
 
-		wp_add_inline_style( 'gdaiidl-frontend', $this->dynamic_badge_css( false ) );
+		$this->activate_frontend_assets();
+	}
 
+	/**
+	 * Register the front-end stylesheet and script.
+	 *
+	 * @return void
+	 */
+	private function register_frontend_assets() {
+		if ( ! wp_style_is( 'gdaiidl-frontend', 'registered' ) ) {
+			wp_register_style(
+				'gdaiidl-frontend',
+				GDAIIDL_URL . 'assets/frontend.css',
+				array(),
+				GDAIIDL_VERSION
+			);
+		}
+
+		if ( ! wp_script_is( 'gdaiidl-frontend', 'registered' ) ) {
+			wp_register_script(
+				'gdaiidl-frontend',
+				GDAIIDL_URL . 'assets/frontend.js',
+				array(),
+				GDAIIDL_VERSION,
+				array(
+					'strategy'  => 'defer',
+					'in_footer' => true,
+				)
+			);
+		}
+	}
+
+	/**
+	 * Determine whether the main queried posts already reveal a disclosure.
+	 *
+	 * @return bool
+	 */
+	private function page_may_contain_disclosure() {
+		if ( is_admin() || wp_doing_ajax() || is_feed() ) {
+			return false;
+		}
+
+		global $wp_query;
+
+		$posts = array();
+
+		if ( isset( $wp_query->posts ) && is_array( $wp_query->posts ) ) {
+			$posts = $wp_query->posts;
+		}
+
+		if ( is_singular( $this->post_types() ) ) {
+			$queried_post = get_post( get_queried_object_id() );
+
+			if ( $queried_post instanceof WP_Post ) {
+				$posts[] = $queried_post;
+			}
+		}
+
+		foreach ( $posts as $post ) {
+			if ( ! $post instanceof WP_Post ) {
+				continue;
+			}
+
+			if ( $this->get_compatible_post_meta( $post->ID, self::META_FEATURED_ENABLED, 'featured_enabled' ) ) {
+				return true;
+			}
+
+			if ( $this->blocks_contain_disclosure( parse_blocks( (string) $post->post_content ) ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Recursively inspect parsed blocks for a marked core/image block.
+	 *
+	 * @param array $blocks Parsed blocks.
+	 * @return bool
+	 */
+	private function blocks_contain_disclosure( $blocks ) {
+		foreach ( (array) $blocks as $block ) {
+			if (
+				isset( $block['blockName'], $block['attrs'] ) &&
+				'core/image' === $block['blockName'] &&
+				is_array( $block['attrs'] ) &&
+				! empty( $block['attrs']['gdAiLabel'] )
+			) {
+				return true;
+			}
+
+			if ( ! empty( $block['innerBlocks'] ) && $this->blocks_contain_disclosure( $block['innerBlocks'] ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Enqueue the front-end assets and prepare the JavaScript configuration.
+	 *
+	 * @return void
+	 */
+	private function activate_frontend_assets() {
+		$this->register_frontend_assets();
+
+		if ( ! wp_style_is( 'gdaiidl-frontend', 'enqueued' ) ) {
+			wp_enqueue_style( 'gdaiidl-frontend' );
+			wp_add_inline_style( 'gdaiidl-frontend', $this->dynamic_badge_css( false ) );
+		}
+
+		if ( $this->frontend_assets_prepared ) {
+			return;
+		}
+
+		$settings               = $this->settings();
 		$minimum_width          = isset( $settings['minimum_image_width'] ) ? (int) $settings['minimum_image_width'] : 0;
 		$minimum_text_width     = isset( $settings['minimum_text_width'] ) ? (int) $settings['minimum_text_width'] : 0;
 		$needs_size_filter      = 0 < $minimum_width || 0 < $minimum_text_width;
@@ -1077,16 +1205,6 @@ final class GDAIIDL_Plugin {
 			}
 		}
 
-		/*
-		 * The size observer is also needed on archive and home pages because
-		 * themes can render the same marked featured image at several different
-		 * widths. The decision is based on the actual rendered width, not on the
-		 * attachment's source dimensions or WordPress image-size name.
-		 *
-		 * With automatic colors the script is loaded even without size
-		 * thresholds: it colors JavaScript-created fallback labels and acts
-		 * as a canvas-based rescue path on servers without the GD extension.
-		 */
 		$auto_color = isset( $settings['background_color_mode'] ) && 'auto' === $settings['background_color_mode'];
 
 		if ( $auto_color && $featured_attachment_id > 0 ) {
@@ -1094,44 +1212,52 @@ final class GDAIIDL_Plugin {
 		}
 
 		if ( ! $needs_size_filter && ! $enable_theme_fallback && ! $auto_color && ! $location_rules_enabled ) {
+			$this->frontend_assets_prepared = true;
 			return;
 		}
 
-		wp_enqueue_script(
-			'gdaiidl-frontend',
-			GDAIIDL_URL . 'assets/frontend.js',
-			array(),
-			GDAIIDL_VERSION,
-			true
-		);
+		wp_enqueue_script( 'gdaiidl-frontend' );
 
 		wp_localize_script(
 			'gdaiidl-frontend',
 			'gdaiidlFrontendConfig',
 			array(
-				'labelText'          => $featured_label_text,
-				'preset'             => $settings['preset'],
-				'minimumImageWidth'  => $minimum_width,
-				'minimumTextWidth'   => $minimum_text_width,
-				'smallImageMode'     => isset( $settings['small_image_mode'] ) ? $settings['small_image_mode'] : 'icon',
-				'featuredFallback'   => $enable_theme_fallback,
-				'iconHtml'           => $this->icon_markup( isset( $settings['icon_style'] ) ? $settings['icon_style'] : 'monogram' ),
-				'featuredSelectors'  => $this->featured_selectors(),
+				'labelText'            => $featured_label_text,
+				'preset'               => $settings['preset'],
+				'minimumImageWidth'    => $minimum_width,
+				'minimumTextWidth'     => $minimum_text_width,
+				'smallImageMode'       => isset( $settings['small_image_mode'] ) ? $settings['small_image_mode'] : 'icon',
+				'featuredFallback'     => $enable_theme_fallback,
+				'iconHtml'             => $this->icon_markup( isset( $settings['icon_style'] ) ? $settings['icon_style'] : 'monogram' ),
+				'featuredSelectors'    => $this->featured_selectors(),
 				'locationRulesEnabled' => $location_rules_enabled,
 				'iconOnlySelectors'    => $this->selector_lines( isset( $settings['icon_only_selectors'] ) ? $settings['icon_only_selectors'] : '' ),
 				'hiddenSelectors'      => $this->selector_lines( isset( $settings['hidden_selectors'] ) ? $settings['hidden_selectors'] : '' ),
-				'iconSizeValue'      => isset( $settings['icon_size_value'] ) ? (float) $settings['icon_size_value'] : 16,
-				'iconSizeUnit'       => isset( $settings['icon_size_unit'] ) ? $settings['icon_size_unit'] : 'px',
-				'tooltipEnabled'     => ! empty( $settings['icon_tooltip_enabled'] ),
-				'autoColor'          => isset( $settings['background_color_mode'] ) && 'auto' === $settings['background_color_mode'],
-				'backgroundOpacity'  => isset( $settings['background_opacity'] ) ? max( 0, min( 100, (int) $settings['background_opacity'] ) ) : 78,
-				'featuredAutoColor'  => $featured_auto_color,
-				'tooltipButtonLabel' => '' !== $featured_label_text
+				'iconSizeValue'        => isset( $settings['icon_size_value'] ) ? (float) $settings['icon_size_value'] : 16,
+				'iconSizeUnit'         => isset( $settings['icon_size_unit'] ) ? $settings['icon_size_unit'] : 'px',
+				'tooltipEnabled'       => ! empty( $settings['icon_tooltip_enabled'] ),
+				'autoColor'            => $auto_color,
+				'backgroundOpacity'    => isset( $settings['background_opacity'] ) ? max( 0, min( 100, (int) $settings['background_opacity'] ) ) : 78,
+				'featuredAutoColor'    => $featured_auto_color,
+				'tooltipButtonLabel'   => '' !== $featured_label_text
 					/* translators: %s: the disclosure label text, e.g. "AI-generated". */
 					? sprintf( __( 'Show disclosure: %s', 'ai-image-disclosure-labels' ), $featured_label_text )
 					: __( 'Show AI disclosure', 'ai-image-disclosure-labels' ),
 			)
 		);
+
+		$this->frontend_assets_prepared = true;
+	}
+
+	/**
+	 * Print a stylesheet that was first requested after wp_head had completed.
+	 *
+	 * @return void
+	 */
+	public function print_late_frontend_styles() {
+		if ( wp_style_is( 'gdaiidl-frontend', 'enqueued' ) && ! wp_style_is( 'gdaiidl-frontend', 'done' ) ) {
+			wp_print_styles( 'gdaiidl-frontend' );
+		}
 	}
 
 	/**
@@ -1634,6 +1760,10 @@ final class GDAIIDL_Plugin {
 			return '';
 		}
 
+		if ( ! is_admin() && ! wp_doing_ajax() && ! is_feed() ) {
+			$this->activate_frontend_assets();
+		}
+
 		$preset_class = in_array( $settings['preset'], array( 'subtle', 'light', 'pill' ), true )
 			? ' gd-ai-preset-' . $settings['preset']
 			: ' gd-ai-preset-custom';
@@ -1865,6 +1995,7 @@ final class GDAIIDL_Plugin {
 			: $defaults['label_text'];
 
 		$output['machine_readable_enabled'] = ! empty( $input['machine_readable_enabled'] );
+		$output['load_assets_only_when_needed'] = ! empty( $input['load_assets_only_when_needed'] );
 		$output['digital_source_type'] = $this->sanitize_digital_source_type(
 			isset( $input['digital_source_type'] ) ? $input['digital_source_type'] : $defaults['digital_source_type']
 		);
@@ -2440,6 +2571,17 @@ final class GDAIIDL_Plugin {
 								<textarea name="<?php echo esc_attr( self::OPTION_KEY ); ?>[hidden_selectors]" rows="3" placeholder="body.home .very-small-thumbnail-list" spellcheck="false"><?php echo esc_textarea( $s['hidden_selectors'] ); ?></textarea>
 							</label>
 							<p class="description"><?php esc_html_e( 'Use hidden rules sparingly, normally only where even the compact symbol cannot be displayed clearly. Hiding a disclosure removes the visible notice in that location. Hidden rules take priority when an element matches both lists.', 'ai-image-disclosure-labels' ); ?></p>
+						</section>
+
+						<section class="gd-ai-card">
+							<h2><?php esc_html_e( 'Performance', 'ai-image-disclosure-labels' ); ?></h2>
+							<label class="gd-ai-toggle-field">
+								<input type="checkbox" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[load_assets_only_when_needed]" value="1" <?php checked( ! empty( $s['load_assets_only_when_needed'] ) ); ?>>
+								<span>
+									<strong><?php esc_html_e( 'Load frontend assets only on pages with disclosure labels', 'ai-image-disclosure-labels' ); ?></strong>
+									<small><?php esc_html_e( 'Recommended. The plugin loads its CSS and JavaScript only when a marked image is present. Disable this option only if a theme, page builder or cache setup causes labels to appear without their styling or responsive behaviour.', 'ai-image-disclosure-labels' ); ?></small>
+								</span>
+							</label>
 						</section>
 
 						<section class="gd-ai-card">

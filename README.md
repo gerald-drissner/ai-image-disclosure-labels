@@ -10,6 +10,8 @@ The plugin does nothing automatically. Editors explicitly decide which images re
 
 ## Features
 
+- Optional performance mode: load frontend assets only on pages with disclosure labels (enabled by default).
+
 - Per-image switch for Gutenberg Image blocks.
 - Optional machine-readable Schema.org `digitalSourceType` declarations using standardized IPTC source categories.
 - Global default and per-image source type for content created or edited using generative AI.

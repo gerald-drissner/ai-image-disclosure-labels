@@ -5,7 +5,7 @@ Tags: ai image, ai generated content, image disclosure, content transparency, eu
 Requires at least: 6.7
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 2.1.2
+Stable tag: 2.1.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -117,6 +117,11 @@ Yes. Choose "Custom symbol" and select a PNG or SVG file from the Media Library.
 For support, visit [drissner.media/kontakt](https://drissner.media/kontakt). If the plugin is useful to you, you can support its development through [PayPal](https://www.paypal.com/paypalme/drissner).
 
 == Changelog ==
+
+= 2.1.3 =
+* Added a recommended performance option that loads frontend CSS and JavaScript only on pages containing disclosure labels.
+* Added automatic late-loading safeguards for disclosures rendered by Query blocks, post loops, themes and page builders.
+* Added an explicit defer loading strategy for the frontend script.
 
 = 2.1.2 =
 * Finalized location-specific display documentation and clarified that selector rules modify existing disclosures only; they never mark images automatically.
