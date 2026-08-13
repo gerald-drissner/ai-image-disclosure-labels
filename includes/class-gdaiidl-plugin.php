@@ -145,6 +145,7 @@ final class GDAIIDL_Plugin {
 		add_filter( 'register_block_type_args', array( $this, 'register_image_block_attributes' ), 10, 2 );
 
 		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_editor_assets' ) );
+		add_action( 'enqueue_block_assets', array( $this, 'enqueue_editor_content_assets' ) );
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_frontend_assets' ), 99 );
 		add_action( 'wp_footer', array( $this, 'print_late_frontend_styles' ), 1 );
 
@@ -1039,6 +1040,37 @@ final class GDAIIDL_Plugin {
 		);
 
 		wp_add_inline_style( 'gdaiidl-editor', $this->dynamic_badge_css( true ) );
+	}
+
+	/**
+	 * Enqueue preview styles inside the block-editor content canvas.
+	 *
+	 * WordPress 7.1 always renders the post-editor canvas in an iframe. Assets
+	 * added through enqueue_block_assets are also loaded inside that iframe on
+	 * supported WordPress versions. Keep the existing editor stylesheet above
+	 * for the editor UI and backward-compatible non-iframe rendering.
+	 *
+	 * @return void
+	 */
+	public function enqueue_editor_content_assets() {
+		if ( ! is_admin() ) {
+			return;
+		}
+
+		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+
+		if ( ! $screen || ! in_array( $screen->post_type, $this->post_types(), true ) ) {
+			return;
+		}
+
+		wp_enqueue_style(
+			'gdaiidl-editor-content',
+			GDAIIDL_URL . 'assets/editor-content.css',
+			array(),
+			GDAIIDL_VERSION
+		);
+
+		wp_add_inline_style( 'gdaiidl-editor-content', $this->dynamic_badge_css( true ) );
 	}
 
 	/**

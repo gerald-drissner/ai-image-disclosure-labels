@@ -1,0 +1,31 @@
+.gd-ai-editor-preview {
+	position: relative;
+}
+
+.gd-ai-editor-preview::after {
+	position: absolute;
+	top: var(--gd-ai-label-top, auto);
+	right: var(--gd-ai-label-right, 7px);
+	bottom: var(--gd-ai-label-bottom, 7px);
+	left: var(--gd-ai-label-left, auto);
+	z-index: 20;
+	box-sizing: border-box;
+	display: block;
+	width: max-content;
+	max-width: calc(100% - 16px);
+	padding: var(--gd-ai-label-padding-y, 3px) var(--gd-ai-label-padding-x, 5px);
+	background-color: var(--gd-ai-label-bg, rgba(23, 23, 23, 0.78));
+	color: var(--gd-ai-label-color, #fff);
+	border: var(--gd-ai-label-border-width, 1px) solid var(--gd-ai-label-border-color, #fff);
+	border-radius: var(--gd-ai-label-radius, 3px);
+	font-family: var(--gd-ai-label-font-family, inherit);
+	font-size: var(--gd-ai-label-font-size, 9px);
+	font-weight: var(--gd-ai-label-font-weight, 600);
+	line-height: 1.2;
+	letter-spacing: 0.01em;
+	text-transform: var(--gd-ai-label-transform, none);
+	white-space: nowrap;
+	content: attr(data-gd-ai-label);
+	pointer-events: none;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+}
