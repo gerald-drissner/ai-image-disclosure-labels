@@ -1,4 +1,7 @@
 # Changelog
+## 2.1.4
+- Added WordPress 7.1 compatibility for the always-iframed post editor by loading image-preview styles inside the editor canvas.
+- No changes to saved block markup, frontend disclosure output, settings, or existing metadata.
 ## 2.1.3
 - Added a recommended performance option that loads frontend CSS and JavaScript only on pages containing disclosure labels.
 - Added automatic late-loading safeguards for disclosures rendered by Query blocks, post loops, themes and page builders.
