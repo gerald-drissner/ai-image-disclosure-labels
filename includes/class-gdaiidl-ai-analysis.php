@@ -1476,6 +1476,7 @@ final class GDAIIDL_AI_Analysis {
 	 */
 	private function count_scope_images( $scope ) {
 		global $wpdb;
+		$image_mime_like = $wpdb->esc_like( 'image/' ) . '%';
 
 		if ( 'unclassified' === $scope ) {
 			$query = $wpdb->prepare(
@@ -1484,11 +1485,12 @@ final class GDAIIDL_AI_Analysis {
 				LEFT JOIN %i pm ON (p.ID = pm.post_id AND pm.meta_key = %s)
 				WHERE p.post_type = 'attachment'
 				AND p.post_status <> 'trash'
-				AND p.post_mime_type LIKE 'image/%%'
+				AND p.post_mime_type LIKE %s
 				AND (pm.meta_id IS NULL OR pm.meta_value = '' OR pm.meta_value NOT IN ('no-ai','generated','modified','edited','enhanced'))",
 				$wpdb->posts,
 				$wpdb->postmeta,
-				GDAIIDL_Plugin::META_MEDIA_SOURCE_TYPE
+				GDAIIDL_Plugin::META_MEDIA_SOURCE_TYPE,
+				$image_mime_like
 			);
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared -- Query was prepared immediately above; admin-only background-job count is intentionally uncached.
 			return (int) $wpdb->get_var( $query );
@@ -1517,8 +1519,9 @@ final class GDAIIDL_AI_Analysis {
 	 */
 	private function query_scope_ids_after( $scope, $after_id, $limit ) {
 		global $wpdb;
-		$limit    = max( 1, min( 50, (int) $limit ) );
-		$after_id = max( 0, (int) $after_id );
+		$limit           = max( 1, min( 50, (int) $limit ) );
+		$after_id        = max( 0, (int) $after_id );
+		$image_mime_like = $wpdb->esc_like( 'image/' ) . '%';
 
 		if ( 'unclassified' === $scope ) {
 			$prepared = $wpdb->prepare(
@@ -1527,7 +1530,7 @@ final class GDAIIDL_AI_Analysis {
 				LEFT JOIN %i pm ON (p.ID = pm.post_id AND pm.meta_key = %s)
 				WHERE p.post_type = 'attachment'
 				AND p.post_status <> 'trash'
-				AND p.post_mime_type LIKE 'image/%%'
+				AND p.post_mime_type LIKE %s
 				AND p.ID > %d
 				AND (pm.meta_id IS NULL OR pm.meta_value = '' OR pm.meta_value NOT IN ('no-ai','generated','modified','edited','enhanced'))
 				ORDER BY p.ID ASC
@@ -1535,6 +1538,7 @@ final class GDAIIDL_AI_Analysis {
 				$wpdb->posts,
 				$wpdb->postmeta,
 				GDAIIDL_Plugin::META_MEDIA_SOURCE_TYPE,
+				$image_mime_like,
 				$after_id,
 				$limit
 			);
@@ -1549,7 +1553,7 @@ final class GDAIIDL_AI_Analysis {
 				ORDER BY ID ASC
 				LIMIT %d",
 				$wpdb->posts,
-				'image/%',
+				$image_mime_like,
 				$after_id,
 				$limit
 			);
