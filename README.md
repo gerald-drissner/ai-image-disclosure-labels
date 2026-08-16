@@ -1,77 +1,73 @@
-# AI Image Disclosure & Labels
+# AI Image & Video Disclosure Labels
 
 <p align="center">
-  <img src=".wordpress-org/icon-256x256.png" width="160" height="160" alt="AI Image Disclosure & Labels icon">
+  <img src=".wordpress-org/icon-256x256.png" width="160" height="160" alt="AI Image & Video Disclosure Labels icon">
 </p>
 
-A WordPress plugin for adding visible AI disclosure labels and optional machine-readable source information to selected Gutenberg images and featured images.
+A WordPress plugin for visible AI image and video disclosures, attachment-level Media Library classification, optional machine-readable provenance metadata, and optional AI-assisted image analysis.
 
-The plugin does nothing automatically. Editors explicitly decide which images receive a label.
+By default, the plugin does not label existing content automatically. Editors can mark individual image/video uses manually, classify reusable attachments in the Media Library, and optionally enable automatic visible disclosures for positively AI-classified attachments.
 
-## Features
+## Highlights in 3.0.0
 
-- Optional performance mode: load frontend assets only on pages with disclosure labels (enabled by default).
+- Independent top-level switches for **Images** and **Videos**; use either medium alone or both together.
+- Media Library statuses: **AI-generated**, **AI-modified**, **No AI used**, or **Unclassified**.
+- Reusable attachment classification inherited by Gutenberg Image and Video blocks and featured-image controls unless a per-use override is set.
+- Video disclosures render immediately below the video rather than over the playback surface or native controls.
+- Videos can inherit the image badge design or use a separate video design with independent alignment, colors, border, typography and padding; the settings page includes both image and video previews.
+- Recommended choices are labelled directly in the settings UI, with the actual recommended value emphasized in explanatory text; automatic image-derived badge color is the fresh-install default.
+- Separate editable default texts for AI-generated and AI-modified disclosures.
+- Optional automatic visible labels for positively AI-classified Media Library attachments; off by default.
+- Optional Schema.org `digitalSourceType` output using standardized IPTC categories, as `ImageObject` and `VideoObject` records.
+- Experimental AI-assisted analysis with background bulk jobs, model discovery, compatibility testing and cost safeguards.
+- WordPress 7.0+ **AI Client / Connectors** support, so configured provider credentials can be reused without storing a duplicate key in this plugin.
+- Direct OpenAI, Gemini, Anthropic and Cloudflare Workers AI modes remain available, plus administrator-supplied OpenAI-compatible HTTPS and custom HTTPS endpoints.
+- No hard-coded model IDs or provider price table.
+- AI visual analysis is advisory and never automatically declares an image “No AI used”. Automated analysis remains image-only in 3.0.0; video classification is manual.
+- Visual auto-classification uses an adjustable confidence threshold with a 95% recommended default. A separate custom-endpoint-only path is reserved for actual technical provenance/watermark verification.
+- Automatic AI actions are presented as a clear optional group, with the confidence threshold visually attached to automatic classification rather than shown as a second nested settings card.
 
-- Per-image switch for Gutenberg Image blocks.
-- Optional machine-readable Schema.org `digitalSourceType` declarations using standardized IPTC source categories.
-- Global default and per-image source type for content created or edited using generative AI.
-- Separate switch for post, page and supported custom-post-type featured images.
-- Full text labels on large images.
-- Compact AI symbols on medium images.
-- Automatic hiding on very small thumbnails.
+## Display features
+
+- Per-image controls for Gutenberg Image blocks.
+- Per-video controls for Gutenberg Video blocks, with the disclosure in normal flow below the video.
+- Separate featured-image controls.
+- Full text labels on large images and compact symbols on smaller images.
 - Optional hover, keyboard-focus and tap-to-toggle disclosure popover.
-- Three built-in SVG symbols plus a custom PNG or SVG from the Media Library.
-- Automatic badge colors derived from the image, with readable light or dark text.
-- Three design presets and detailed visual controls.
-- Location-specific icon-only and hidden rules using stable CSS selectors.
+- Three built-in SVG symbols plus custom PNG/SVG symbols from the Media Library.
+- Automatic image-derived badge colors with contrast-aware text.
+- Three image design presets and detailed visual controls, plus optional independent video badge styling.
+- Location-specific icon-only and hidden rules using CSS selectors.
 - Featured-image handling across homepages, archives, query blocks, cards and post loops.
-- Theme integration through settings and developer filters.
-- Cache clearing integrations for common WordPress caching plugins.
-- No Google Fonts or other remote font requests.
+- Theme integration and cache-clearing integrations for common WordPress caching plugins.
 - Accessible keyboard and screen-reader behavior.
-- Clean uninstall.
 
 ## Requirements
 
 - WordPress 6.7 or later
 - PHP 7.4 or later
+- WordPress 7.0+ only for the optional AI Client / Connectors integration
+
+## AI analysis and privacy
+
+AI-assisted analysis is optional and disabled by default. When requested, the plugin sends a temporary resized copy of the selected image plus a short classification prompt from the WordPress server to the configured provider. The original Media Library file is not modified.
+
+When **WordPress AI Client** mode is used, provider credentials stay in **Settings → Connectors** and are not copied into this plugin. Direct-provider modes can instead store their own server-side API credential or use `wp-config.php` constants. No AI-provider request is made merely because the plugin is installed, and public frontend page views do not call the analysis provider.
+
+For custom/OpenAI-compatible integrations, endpoint URLs must use HTTPS. Remote AI responses and model catalogues are size-bounded, and a custom endpoint can trigger automatic technical-provenance application only by returning the literal JSON boolean `verified_provenance=true`. Ordinary vision-model confidence is never treated as verified provenance.
 
 ## Installation
 
-1. Install the plugin ZIP through **Plugins → Add Plugin → Upload Plugin**.
-2. Activate **AI Image Disclosure & Labels**.
-3. Open **Settings → AI Image Labels**.
-4. Select an Image block in the editor and enable **AI image label**.
-5. For a featured image, use **AI label for featured image** in the document sidebar.
-
-## Responsive disclosure modes
-
-| Rendered image width | Result |
-|---|---|
-| Below the minimum marker width | Nothing is displayed |
-| Between the marker and text thresholds | Compact symbol |
-| At or above the text threshold | Full disclosure text |
-
-All thresholds are configurable.
-
-## Location-specific display rules
-
-The optional location rules modify how an existing disclosure is displayed inside selected page areas. They do not mark images automatically.
-
-A typical editor-controlled setup is:
-
-1. Add `ai-label-disclosure-symbol-only` to the outer Group, Cover, Query or layout container in the block editor. Enter the class name there without a leading dot.
-2. Enable **Location-specific display** in the plugin settings.
-3. Add `.ai-label-disclosure-symbol-only` to the icon-only selector field.
-4. To limit the rule to the posts homepage, use `body.home .ai-label-disclosure-symbol-only`.
-
-Use icon-only mode for prominent hero cards, overlay tiles and similar layouts where the full text label could be mistaken for a statement about the whole article or section. Use hidden rules only when even the compact symbol cannot fit clearly. Avoid post IDs, attachment IDs and generated content-specific classes because they may change as queried or random content changes.
+1. Install the plugin ZIP through **Plugins → Add Plugin → Upload Plugin**, or install it from WordPress.org.
+2. Activate **AI Image & Video Disclosure Labels**.
+3. Open **Settings → AI Image & Video Labels**.
+4. Classify reusable images or videos in **Media → Library**, or configure an Image block, Video block, or featured image directly in the editor.
 
 ## EU AI Act note
 
-Article 50 of Regulation (EU) 2024/1689 includes transparency duties for providers and deployers of certain AI systems, including visible disclosure of deep fakes and certain other AI-generated content. The relevant transparency rules apply from 2 August 2026.
+Article 50 of Regulation (EU) 2024/1689 includes transparency duties for providers and deployers of certain AI systems. The relevant transparency rules apply from 2 August 2026.
 
-This plugin helps add a visible disclosure and can optionally publish a self-declared Schema.org `digitalSourceType` value in the page source. It does not determine whether a particular image must be labelled, modify the image file, create or verify C2PA Content Credentials, prove origin or authenticity, or replace provider-supplied machine-readable markings. It is not legal advice.
+This plugin helps add visible disclosures and can optionally publish a self-declared Schema.org `digitalSourceType` value. It does not determine whether particular content must be labelled, modify media files, create or verify C2PA Content Credentials, prove origin or authenticity, or replace provider-supplied machine-readable markings. It is not legal advice.
 
 ## Development
 
@@ -81,16 +77,16 @@ The WordPress.org plugin slug and translation domain are:
 ai-image-disclosure-labels
 ```
 
-Plugin-owned PHP globals, option names, metadata keys, custom hooks, REST routes, JavaScript configuration objects, enqueue handles, settings slugs and editor registration identifiers use the unique `gdaiidl` prefix. Earlier GitHub settings and metadata are migrated automatically. Existing serialized block attributes (`gdAiLabel` and `gdAiLabelText`) and established `gd-ai-*` CSS selectors remain unchanged for backward compatibility with saved posts and custom styling. Version 2.0.4 adds the optional `gdAiSourceType` block attribute and `_gdaiidl_featured_source_type` metadata key.
+Plugin-owned PHP globals, option names, metadata keys, custom hooks, REST routes, JavaScript globals, enqueue handles, settings slugs and editor registration identifiers use the unique `gdaiidl` prefix. Existing serialized block attributes and established `gd-ai-*` CSS selectors remain compatible with saved content.
 
-Run the official Plugin Check workflow before each release and review every reported error and warning.
+Run the official Plugin Check workflow before every WordPress.org release.
 
 ## Support and contributions
 
 Support: https://drissner.media/kontakt  
 Donate: https://www.paypal.com/paypalme/drissner
 
-Bug reports and focused pull requests are welcome through the GitHub issue tracker and pull-request workflow.
+Bug reports and focused pull requests are welcome through GitHub.
 
 ## License
 

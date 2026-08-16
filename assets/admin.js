@@ -13,6 +13,25 @@
 
 	const fields = {
 		labelText: byId( 'gd-ai-label-text' ),
+		labelTextModified: byId( 'gd-ai-label-text-modified' ),
+		previewTextType: byId( 'gd-ai-preview-text-type' ),
+		enableImages: byId( 'gd-ai-enable-images' ),
+		enableVideos: byId( 'gd-ai-enable-videos' ),
+		videoSeparateDesign: byId( 'gd-ai-video-separate-design' ),
+		videoLabelText: byId( 'gd-ai-video-label-text' ),
+		videoLabelTextModified: byId( 'gd-ai-video-label-text-modified' ),
+		videoAlignment: byId( 'gd-ai-video-alignment' ),
+		videoBackgroundColor: byId( 'gd-ai-video-background-color' ),
+		videoBackgroundOpacity: byId( 'gd-ai-video-background-opacity' ),
+		videoTextColor: byId( 'gd-ai-video-text-color' ),
+		videoBorderColor: byId( 'gd-ai-video-border-color' ),
+		videoBorderWidth: byId( 'gd-ai-video-border-width' ),
+		videoBorderRadius: byId( 'gd-ai-video-border-radius' ),
+		videoFontSize: byId( 'gd-ai-video-font-size' ),
+		videoFontWeight: byId( 'gd-ai-video-font-weight' ),
+		videoPaddingVertical: byId( 'gd-ai-video-padding-vertical' ),
+		videoPaddingHorizontal: byId( 'gd-ai-video-padding-horizontal' ),
+		videoTextTransform: byId( 'gd-ai-video-text-transform' ),
 		position: byId( 'gd-ai-position' ),
 		backgroundColor: byId( 'gd-ai-background-color' ),
 		backgroundOpacity: byId( 'gd-ai-background-opacity' ),
@@ -62,14 +81,23 @@
 
 		colorInputs.forEach( function ( input ) {
 			if ( input ) {
+				const field = input.closest( '.gd-ai-field' );
+
 				input.setAttribute( 'aria-disabled', auto ? 'true' : 'false' );
 				input.tabIndex = auto ? -1 : 0;
-				input.closest( '.gd-ai-field' ).classList.toggle( 'gd-ai-field-disabled', auto );
+
+				if ( field ) {
+					field.classList.toggle( 'gd-ai-field-disabled', auto );
+				}
 			}
 		} );
 	}
 
 	const preview = byId( 'gd-ai-preview' );
+	const videoPreview = byId( 'gd-ai-video-preview' );
+	const videoPreviewRow = byId( 'gd-ai-video-preview-row' );
+	const videoPreviewLabel = byId( 'gd-ai-video-preview-label' );
+	const videoDesignFields = document.querySelector( '.gd-ai-video-design-fields' );
 	const label = byId( 'gd-ai-preview-label' );
 	const symbolPreview = byId( 'gd-ai-symbol-preview' );
 	const previewSymbol = byId( 'gd-ai-preview-symbol' );
@@ -82,6 +110,7 @@
 	const customIconRadio = byId( 'gd-ai-icon-style-custom' );
 	let applyingPreset = false;
 	let mediaFrame = null;
+	let resizeTimer = null;
 	let customIcon = config.customIcon || null;
 
 	if ( ! preview || ! label || ! previewSymbol || ! previewSymbolIcon ) {
@@ -109,6 +138,38 @@
 
 	function value( key, fallback ) {
 		return fields[ key ] ? fields[ key ].value : fallback;
+	}
+
+	function previewLabelText() {
+		const type = value( 'previewTextType', 'generated' );
+
+		if ( type === 'modified' ) {
+			return value( 'labelTextModified', 'AI-modified' );
+		}
+
+		return value( 'labelText', 'AI-generated' );
+	}
+
+
+	function videoPreviewLabelText() {
+		const type = value( 'previewTextType', 'generated' );
+		if ( type === 'modified' ) {
+			return value( 'videoLabelTextModified', '' ) || value( 'labelTextModified', 'AI-modified' );
+		}
+		return value( 'videoLabelText', '' ) || value( 'labelText', 'AI-generated' );
+	}
+
+	function separateVideoDesign() {
+		return !! ( fields.videoSeparateDesign && fields.videoSeparateDesign.checked );
+	}
+
+	function syncVideoDesignUi() {
+		const separate = separateVideoDesign();
+
+		if ( videoDesignFields ) {
+			videoDesignFields.hidden = ! separate;
+		}
+
 	}
 
 	function getSelectedIconStyle() {
@@ -153,6 +214,30 @@
 				Math.max( 3, ( Number( value( 'paddingHorizontal', 5 ) ) || 0 ) - 1 ) + 'px'
 			: value( 'paddingVertical', 3 ) + 'px ' + value( 'paddingHorizontal', 5 ) + 'px';
 		element.style.textTransform = value( 'textTransform', 'none' );
+		element.style.fontFamily = previewFontFamily();
+	}
+
+
+	function applyVideoBadgeAppearance( element ) {
+		if ( ! element ) {
+			return;
+		}
+
+		if ( ! separateVideoDesign() ) {
+			applyBadgeAppearance( element, false );
+			return;
+		}
+
+		element.style.backgroundColor = hexToRgba( value( 'videoBackgroundColor', '#171717' ), value( 'videoBackgroundOpacity', 78 ) );
+		element.style.color = value( 'videoTextColor', '#ffffff' );
+		element.style.borderColor = value( 'videoBorderColor', '#ffffff' );
+		element.style.borderWidth = value( 'videoBorderWidth', 1 ) + 'px';
+		element.style.borderStyle = 'solid';
+		element.style.borderRadius = value( 'videoBorderRadius', 3 ) + 'px';
+		element.style.fontSize = value( 'videoFontSize', 9 ) + 'px';
+		element.style.fontWeight = value( 'videoFontWeight', 600 );
+		element.style.padding = value( 'videoPaddingVertical', 3 ) + 'px ' + value( 'videoPaddingHorizontal', 5 ) + 'px';
+		element.style.textTransform = value( 'videoTextTransform', 'none' );
 		element.style.fontFamily = previewFontFamily();
 	}
 
@@ -204,7 +289,10 @@
 			fontCustomField.hidden = fields.fontFamilyMode.value !== 'custom';
 		}
 
-		label.textContent = value( 'labelText', 'AI-generated' ) || 'AI-generated';
+		const previewText = previewLabelText();
+		label.textContent = previewText;
+		label.style.display = previewText ? '' : 'none';
+		previewSymbol.style.display = previewText ? '' : 'none';
 		applyBadgeAppearance( label, false );
 
 		label.style.top = 'auto';
@@ -228,6 +316,23 @@
 			label.style.right = horizontal;
 		}
 
+		syncVideoDesignUi();
+		if ( preview ) {
+			preview.classList.toggle( 'gd-ai-preview-disabled', !! ( fields.enableImages && ! fields.enableImages.checked ) );
+		}
+		if ( videoPreview && videoPreviewLabel && videoPreviewRow ) {
+			const videoText = videoPreviewLabelText();
+			videoPreview.classList.toggle( 'gd-ai-preview-disabled', !! ( fields.enableVideos && ! fields.enableVideos.checked ) );
+			videoPreviewLabel.textContent = videoText;
+			videoPreviewLabel.style.display = videoText ? '' : 'none';
+			applyVideoBadgeAppearance( videoPreviewLabel );
+			let videoAlignment = separateVideoDesign() ? value( 'videoAlignment', 'right' ) : ( position.indexOf( '-left' ) !== -1 ? 'left' : 'right' );
+			if ( [ 'left', 'center', 'right' ].indexOf( videoAlignment ) === -1 ) {
+				videoAlignment = 'right';
+			}
+			videoPreviewRow.className = 'gd-ai-video-preview-row gd-ai-video-preview-align-' + videoAlignment;
+		}
+
 		applyBadgeAppearance( previewSymbol, true );
 		previewSymbolIcon.innerHTML = iconMarkup( getSelectedIconStyle() );
 		const iconSize = getPreviewIconSize();
@@ -235,7 +340,7 @@
 		previewSymbolIcon.style.height = iconSize + 'px';
 
 		if ( previewSymbolTooltip ) {
-			previewSymbolTooltip.textContent = value( 'labelText', 'AI-generated' ) || 'AI-generated';
+			previewSymbolTooltip.textContent = previewText;
 		}
 
 		const tooltipEnabled = !! ( fields.iconTooltipEnabled && fields.iconTooltipEnabled.checked );
@@ -378,6 +483,13 @@
 		} );
 	}
 
+	if ( fields.videoSeparateDesign ) {
+		fields.videoSeparateDesign.addEventListener( 'change', function () {
+			syncVideoDesignUi();
+			updatePreview();
+		} );
+	}
+
 	const designFieldKeys = [
 		'backgroundColor', 'backgroundOpacity', 'textColor', 'borderColor',
 		'borderWidth', 'borderRadius', 'fontSize', 'fontWeight',
@@ -401,7 +513,10 @@
 		fields[ key ].addEventListener( 'change', handleFieldChange );
 	} );
 
-	window.addEventListener( 'resize', updatePreview );
+	window.addEventListener( 'resize', function () {
+		window.clearTimeout( resizeTimer );
+		resizeTimer = window.setTimeout( updatePreview, 100 );
+	} );
 	previewSymbol.addEventListener( 'click', function () {
 		if ( ! fields.iconTooltipEnabled || ! fields.iconTooltipEnabled.checked ) {
 			return;

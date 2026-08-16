@@ -36,7 +36,8 @@ figure.gd-ai-image-frame {
 }
 
 .gd-ai-image-frame > .gd-ai-image-label,
-.gd-ai-featured-theme-fallback > .gd-ai-image-label {
+.gd-ai-featured-theme-fallback > .gd-ai-image-label,
+.gd-ai-video-disclosure-row > .gd-ai-image-label {
 	font-family: var(--gd-ai-label-font-family, inherit);
 	position: absolute;
 	top: var(--gd-ai-label-top, auto);
@@ -69,6 +70,35 @@ figure.gd-ai-image-frame {
 	filter: none;
 	pointer-events: none;
 	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+
+
+/* Video disclosures stay below the media so playback controls remain unobstructed. */
+.gd-ai-video-disclosure-row {
+	display: flex;
+	container-type: inline-size;
+	box-sizing: border-box;
+	width: 100%;
+	margin: 6px 0 0;
+	padding: 0;
+}
+
+.gd-ai-video-disclosure-row.gd-ai-video-align-left {
+	justify-content: flex-start;
+}
+
+.gd-ai-video-disclosure-row.gd-ai-video-align-right {
+	justify-content: flex-end;
+}
+
+.gd-ai-video-disclosure-row > .gd-ai-image-label {
+	position: relative;
+	top: auto;
+	right: auto;
+	bottom: auto;
+	left: auto;
+	z-index: 1;
+	max-width: 100%;
 }
 
 .gd-ai-label-icon {
@@ -224,9 +254,80 @@ figure.gd-ai-image-frame {
 	display: inline-block;
 }
 
+
+/*
+ * Touch-first compact mode.
+ *
+ * This intentionally uses input capabilities instead of user-agent strings.
+ * The JavaScript "forced" class is a fallback for browsers/devices whose
+ * pointer media-query reporting is incomplete.
+ */
+@media (hover: none) and (pointer: coarse), (any-hover: none) and (any-pointer: coarse) {
+	.gd-ai-image-label.gd-ai-touch-compact {
+		padding: var(--gd-ai-label-icon-padding-y, 3px) var(--gd-ai-label-icon-padding-x, 4px);
+		min-width: calc(var(--gd-ai-label-icon-size, 16px) + (var(--gd-ai-label-icon-padding-x, 4px) * 2));
+	}
+
+	.gd-ai-image-label.gd-ai-touch-compact > .gd-ai-label-icon {
+		display: block;
+	}
+
+	.gd-ai-image-label.gd-ai-touch-compact > .gd-ai-label-trigger {
+		display: inline-flex;
+	}
+
+	.gd-ai-image-label.gd-ai-touch-compact .gd-ai-label-trigger .gd-ai-label-icon {
+		display: block;
+	}
+
+	.gd-ai-image-label.gd-ai-touch-compact > .gd-ai-label-text {
+		display: none;
+	}
+}
+
+.gd-ai-image-label.gd-ai-touch-compact-forced {
+	padding: var(--gd-ai-label-icon-padding-y, 3px) var(--gd-ai-label-icon-padding-x, 4px);
+	min-width: calc(var(--gd-ai-label-icon-size, 16px) + (var(--gd-ai-label-icon-padding-x, 4px) * 2));
+}
+
+.gd-ai-image-label.gd-ai-touch-compact-forced > .gd-ai-label-icon {
+	display: block;
+}
+
+.gd-ai-image-label.gd-ai-touch-compact-forced > .gd-ai-label-trigger {
+	display: inline-flex;
+}
+
+.gd-ai-image-label.gd-ai-touch-compact-forced .gd-ai-label-trigger .gd-ai-label-icon {
+	display: block;
+}
+
+.gd-ai-image-label.gd-ai-touch-compact-forced > .gd-ai-label-text {
+	display: none;
+}
+
 @media (max-width: 480px) {
 	.gd-ai-image-label {
 		max-width: calc(100% - 12px);
 		white-space: normal;
+	}
+}
+
+.gd-ai-video-disclosure-row.gd-ai-video-align-center {
+	justify-content: center;
+}
+
+/* Windows High Contrast / forced-colors support. */
+@media (forced-colors: active) {
+	.gd-ai-image-label,
+	.gd-ai-label-tooltip {
+		background: Canvas;
+		color: CanvasText;
+		border-color: CanvasText;
+		box-shadow: none;
+	}
+
+	.gd-ai-label-trigger:focus-visible {
+		outline-color: Highlight;
 	}
 }

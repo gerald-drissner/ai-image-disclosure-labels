@@ -8,6 +8,7 @@
 	const minimumWidth = Math.max( 0, Number( config.minimumImageWidth ) || 0 );
 	const minimumTextWidth = Math.max( 0, Number( config.minimumTextWidth ) || 0 );
 	const smallImageMode = config.smallImageMode === 'hide' ? 'hide' : 'icon';
+	const touchCompactEnabled = !! config.touchCompactMode;
 	const iconSizeValue = Math.max( 0, Number( config.iconSizeValue ) || 0 );
 	const iconSizeUnit = config.iconSizeUnit === 'percent' ? 'percent' : 'px';
 	const tooltipEnabled = !! config.tooltipEnabled;
@@ -154,6 +155,45 @@
 		return type === 'inline-size' || type === 'size';
 	}
 
+	function mediaQueryMatches( query ) {
+		return typeof window.matchMedia === 'function' && window.matchMedia( query ).matches;
+	}
+
+	function isTouchFirstDevice() {
+		if ( ! touchCompactEnabled ) {
+			return false;
+		}
+
+		if (
+			mediaQueryMatches( '(hover: none) and (pointer: coarse)' ) ||
+			mediaQueryMatches( '(any-hover: none) and (any-pointer: coarse)' )
+		) {
+			return true;
+		}
+
+		/*
+		 * Fallback for tablet browsers that expose touch points but incomplete
+		 * pointer media features (including some browsers in desktop-site mode).
+		 * A fine, hover-capable primary pointer wins, so touch-enabled laptops
+		 * with a mouse/trackpad keep the normal desktop presentation.
+		 */
+		const touchPoints = Number( window.navigator && window.navigator.maxTouchPoints ) || 0;
+		const hasFinePrimaryPointer = mediaQueryMatches( '(hover: hover) and (pointer: fine)' );
+
+		return touchPoints > 0 && ! hasFinePrimaryPointer;
+	}
+
+	function syncTouchCompactClass( label ) {
+		if ( ! label ) {
+			return false;
+		}
+
+		const active = isTouchFirstDevice();
+		label.classList.toggle( 'gd-ai-touch-compact-forced', active );
+
+		return active;
+	}
+
 	function setFallbackIconSize( label, renderedWidth ) {
 		if ( iconSizeUnit === 'percent' && iconSizeValue > 0 ) {
 			label.style.setProperty( '--gd-ai-label-icon-size', ( renderedWidth * iconSizeValue / 100 ) + 'px' );
@@ -265,8 +305,9 @@
 		}
 
 		const locationMode = getLocationMode( label );
+		const touchMode = isTouchFirstDevice() ? 'icon' : '';
 
-		if ( ( locationMode || getModeForWidth( renderedWidth ) ) !== 'icon' ) {
+		if ( ( locationMode || touchMode || getModeForWidth( renderedWidth ) ) !== 'icon' ) {
 			setTooltipOpen( label, false );
 		}
 	}
@@ -275,6 +316,8 @@
 		if ( ! label ) {
 			return;
 		}
+
+		syncTouchCompactClass( label );
 
 		const image = getLabelImage( label );
 
@@ -322,8 +365,9 @@
 
 		observedLabels.add( label );
 		initializeTooltip( label );
+		syncTouchCompactClass( label );
 
-		if ( ! needsSizeLogic && ! tooltipEnabled && ! autoColor && ! locationRulesEnabled ) {
+		if ( ! needsSizeLogic && ! tooltipEnabled && ! autoColor && ! locationRulesEnabled && ! touchCompactEnabled ) {
 			return;
 		}
 
@@ -413,7 +457,7 @@
 		const presetClass = [ 'subtle', 'light', 'pill' ].indexOf( config.preset ) !== -1
 			? ' gd-ai-preset-' + config.preset
 			: ' gd-ai-preset-custom';
-		label.className = 'gd-ai-image-label' + presetClass;
+		label.className = 'gd-ai-image-label' + presetClass + ( touchCompactEnabled ? ' gd-ai-touch-compact' : '' );
 		label.setAttribute( 'role', 'note' );
 		label.setAttribute( 'aria-label', config.labelText );
 		label.setAttribute( 'data-gd-ai-featured-label', '1' );
@@ -456,7 +500,7 @@
 	}
 
 	function initialize() {
-		if ( ( needsSizeLogic || tooltipEnabled || autoColor || locationRulesEnabled ) && 'ResizeObserver' in window ) {
+		if ( ( needsSizeLogic || tooltipEnabled || autoColor || locationRulesEnabled || touchCompactEnabled ) && 'ResizeObserver' in window ) {
 			resizeObserver = new ResizeObserver( function ( entries ) {
 				entries.forEach( function ( entry ) {
 					const image = entry.target;
@@ -474,7 +518,16 @@
 		addFeaturedLabel();
 		observeAllLabels( document );
 
-		if ( ( needsSizeLogic || tooltipEnabled || autoColor || locationRulesEnabled ) && ! resizeObserver ) {
+		if ( ( needsSizeLogic || tooltipEnabled || autoColor || locationRulesEnabled || touchCompactEnabled ) && ! resizeObserver ) {
+			window.addEventListener( 'resize', function () {
+				window.clearTimeout( resizeTimer );
+				resizeTimer = window.setTimeout( function () {
+					document.querySelectorAll( '.gd-ai-image-label' ).forEach( updateLabelVisibility );
+				}, 100 );
+			} );
+		}
+
+		if ( touchCompactEnabled && resizeObserver ) {
 			window.addEventListener( 'resize', function () {
 				window.clearTimeout( resizeTimer );
 				resizeTimer = window.setTimeout( function () {

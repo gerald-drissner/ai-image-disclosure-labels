@@ -1,0 +1,315 @@
+.gdaiidl-ai-analysis-card .gdaiidl-ai-caution {
+	margin: 14px 0;
+}
+
+.gdaiidl-ai-provider-fields[hidden],
+.gdaiidl-ai-pricing-manual[hidden] {
+	display: none !important;
+}
+
+.gdaiidl-ai-model-row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	align-items: center;
+}
+
+.gdaiidl-ai-model-row input {
+	flex: 1 1 auto;
+	min-width: 220px;
+}
+
+
+.gdaiidl-ai-secret-fields {
+	margin: 10px 0 14px;
+}
+
+.gdaiidl-ai-help {
+	border-top: 1px solid #dcdcde;
+	padding: 10px 0;
+}
+
+.gdaiidl-ai-help summary {
+	cursor: pointer;
+	font-weight: 600;
+}
+
+.gdaiidl-ai-help > div {
+	padding: 6px 2px 2px 18px;
+}
+
+.gdaiidl-ai-contract {
+	max-width: 100%;
+	overflow: auto;
+	padding: 10px 12px;
+	background: #f6f7f7;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+	font-size: 12px;
+	line-height: 1.45;
+}
+
+.gdaiidl-ai-library-jobs {
+	margin-top: 18px;
+	padding-top: 4px;
+}
+
+.gdaiidl-ai-job-status {
+	margin-top: 12px;
+}
+
+.gdaiidl-ai-job {
+	padding: 10px 12px;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+	background: #fff;
+}
+
+.gdaiidl-ai-job p {
+	margin: 5px 0;
+}
+
+.gdaiidl-ai-progress {
+	height: 8px;
+	background: #dcdcde;
+	border-radius: 999px;
+	overflow: hidden;
+	margin: 8px 0;
+}
+
+.gdaiidl-ai-progress > span {
+	display: block;
+	height: 100%;
+	background: currentColor;
+}
+
+.gdaiidl-ai-error {
+	color: #b32d2e;
+}
+
+.column-gdaiidl_ai_status,
+.column-gdaiidl_ai_analysis {
+	width: 145px;
+}
+
+.gdaiidl-analysis-chip {
+	display: inline-block;
+	max-width: 100%;
+	padding: 2px 7px;
+	border: 1px solid #c3c4c7;
+	border-radius: 999px;
+	background: #f6f7f7;
+	font-size: 11px;
+	line-height: 1.5;
+	white-space: nowrap;
+}
+
+.gdaiidl-analysis-likely-ai-generated,
+.gdaiidl-analysis-likely-ai-modified {
+	font-weight: 600;
+}
+
+.gdaiidl-analysis-failed {
+	border-color: #d63638;
+}
+
+@media (max-width: 782px) {
+	.gdaiidl-ai-model-row {
+		align-items: stretch;
+		flex-direction: column;
+	}
+	.gdaiidl-ai-model-row input {
+		min-width: 0;
+	}
+}
+
+.gdaiidl-experimental-chip {
+	display: inline-block;
+	margin-left: 7px;
+	padding: 2px 7px;
+	border: 1px solid #c3c4c7;
+	border-radius: 999px;
+	font-size: 11px;
+	font-weight: 600;
+	line-height: 1.4;
+	vertical-align: 2px;
+	color: #50575e;
+	background: #f6f7f7;
+}
+
+.gdaiidl-ai-model-status {
+	margin-top: 10px;
+	padding: 9px 12px;
+	border: 1px solid #c3c4c7;
+	border-left-width: 4px;
+	border-radius: 3px;
+	background: #fff;
+	line-height: 1.5;
+}
+
+.gdaiidl-ai-model-status.is-loading,
+.gdaiidl-ai-model-status.is-info {
+	border-left-color: #2271b1;
+	background: #f0f6fc;
+}
+
+.gdaiidl-ai-model-status.is-success {
+	border-left-color: #00a32a;
+	background: #edfaef;
+}
+
+.gdaiidl-ai-model-status.is-error {
+	border-left-color: #d63638;
+	background: #fcf0f1;
+}
+
+
+.gdaiidl-ai-model-control > label,
+.gdaiidl-ai-catalogue-control > label {
+	display: block;
+	font-weight: 600;
+	margin-bottom: 6px;
+}
+
+.gdaiidl-ai-model-control > input,
+.gdaiidl-ai-catalogue-control select {
+	width: 100%;
+	max-width: 100%;
+}
+
+.gdaiidl-ai-catalogue-control {
+	margin-top: 14px;
+	padding: 12px;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+	background: #f6f7f7;
+}
+
+.gdaiidl-ai-model-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin: 12px 0;
+}
+
+.gdaiidl-ai-catalogue-control input[type="search"] {
+	width: 100%;
+	max-width: 100%;
+	margin: 0 0 8px;
+}
+
+.gdaiidl-ai-catalogue-control select {
+	min-height: 42px;
+}
+
+.gdaiidl-ai-catalogue-combobox {
+	position: relative;
+}
+
+.gdaiidl-ai-catalogue-control input[type="search"] {
+	width: 100%;
+	max-width: 100%;
+	margin: 0;
+}
+
+.gdaiidl-ai-model-results {
+	position: absolute;
+	z-index: 1000;
+	top: calc(100% + 4px);
+	left: 0;
+	right: 0;
+	max-height: 320px;
+	overflow-y: auto;
+	border: 1px solid #8c8f94;
+	border-radius: 3px;
+	background: #fff;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.16);
+}
+
+.gdaiidl-ai-model-results[hidden] {
+	display: none !important;
+}
+
+.gdaiidl-ai-model-result {
+	display: block;
+	width: 100%;
+	margin: 0;
+	padding: 8px 10px;
+	border: 0;
+	border-bottom: 1px solid #f0f0f1;
+	background: #fff;
+	color: #1d2327;
+	font: inherit;
+	line-height: 1.35;
+	text-align: left;
+	cursor: pointer;
+}
+
+.gdaiidl-ai-model-result:last-of-type {
+	border-bottom: 0;
+}
+
+.gdaiidl-ai-model-result:hover,
+.gdaiidl-ai-model-result.is-active {
+	background: #f0f6fc;
+	color: #0a4b78;
+}
+
+.gdaiidl-ai-model-no-results,
+.gdaiidl-ai-model-more-results {
+	padding: 9px 10px;
+	color: #646970;
+	font-size: 12px;
+	line-height: 1.4;
+}
+
+@media (max-width: 782px) {
+	.gdaiidl-ai-model-results {
+		position: static;
+		max-height: 260px;
+		margin-top: 4px;
+	}
+}
+
+/* 3.0 clearer automation controls */
+.gdaiidl-auto-apply-visual {
+	margin: 10px 0 4px;
+	padding: 0;
+	border: 1px solid #dcdcde;
+	border-radius: 6px;
+	background: #f6f7f7;
+	overflow: hidden;
+}
+
+/*
+ * The auto-classification toggle and its confidence threshold form one
+ * logical control. Remove the generic toggle card's own border/background
+ * here so the group has one visual boundary instead of a nested box.
+ */
+.gdaiidl-auto-apply-visual .gd-ai-toggle-field {
+	margin: 0;
+	border: 0;
+	border-radius: 0;
+	background: transparent;
+}
+
+.gdaiidl-confidence-field {
+	max-width: none;
+	margin: 0 14px 14px 48px;
+	padding-top: 14px;
+	border-top: 1px solid #dcdcde;
+}
+
+.gdaiidl-confidence-field input[type="number"] {
+	max-width: 120px;
+}
+
+@media (max-width: 782px) {
+	.gdaiidl-confidence-field {
+		margin-left: 14px;
+	}
+}
+
+.gdaiidl-verified-provenance-option {
+	margin-top: 10px;
+}

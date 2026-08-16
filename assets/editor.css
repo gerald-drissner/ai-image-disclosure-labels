@@ -57,3 +57,54 @@
 .gd-ai-panel-error {
 	margin: 10px 0 0;
 }
+
+.gd-ai-inherited-status {
+	margin: 8px 0 12px;
+	padding: 8px 10px;
+	border-left: 3px solid #2271b1;
+	background: #f0f6fc;
+	font-size: 12px;
+	line-height: 1.45;
+}
+
+
+/* Video preview mirrors frontend behavior: the disclosure sits below the video. */
+.gd-ai-editor-video-preview::after {
+	position: relative;
+	z-index: 20;
+	box-sizing: border-box;
+	display: table;
+	width: max-content;
+	max-width: calc(100% - 16px);
+	margin-top: 6px;
+	padding: var(--gd-ai-label-padding-y, 3px) var(--gd-ai-label-padding-x, 5px);
+	background-color: var(--gd-ai-label-bg, rgba(23, 23, 23, 0.78));
+	color: var(--gd-ai-label-color, #fff);
+	border: var(--gd-ai-label-border-width, 1px) solid var(--gd-ai-label-border-color, #fff);
+	border-radius: var(--gd-ai-label-radius, 3px);
+	font-family: var(--gd-ai-label-font-family, inherit);
+	font-size: var(--gd-ai-label-font-size, 9px);
+	font-weight: var(--gd-ai-label-font-weight, 600);
+	line-height: 1.2;
+	letter-spacing: 0.01em;
+	text-transform: var(--gd-ai-label-transform, none);
+	white-space: nowrap;
+	content: attr(data-gd-ai-label);
+	pointer-events: none;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+
+.gd-ai-editor-video-preview.gd-ai-editor-video-align-left::after {
+	margin-right: auto;
+	margin-left: 0;
+}
+
+.gd-ai-editor-video-preview.gd-ai-editor-video-align-right::after {
+	margin-right: 0;
+	margin-left: auto;
+}
+
+.gd-ai-editor-video-preview.gd-ai-editor-video-align-center::after {
+	margin-right: auto;
+	margin-left: auto;
+}

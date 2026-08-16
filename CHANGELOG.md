@@ -1,4 +1,36 @@
 # Changelog
+
+## 3.0.0
+
+> Major update since the previously published 2.1.4 release. The unpublished 2.2.x-2.5.x development builds are folded into 3.0.0.
+
+- Renamed the public-facing plugin title to **AI Image & Video Disclosure Labels** while retaining the existing WordPress.org slug and text domain for compatibility.
+- Added independent top-level enable switches for images and videos; disabled media types retain stored classifications but no longer expose normal disclosure controls/output.
+- Added optional video-specific wording and a separate video badge design with left/center/right alignment, colors, opacity, border, radius, typography, padding and a dedicated live preview.
+- Fixed the separate-video-design switch so its controls reveal immediately, removed redundant inherited/active status copy, and added file-aware cache busting across plugin CSS/JavaScript assets to prevent stale files during same-version test builds.
+- Marked genuinely recommended choices directly in the UI and bolded the recommended value in explanatory text (for example **on**, **off**, **95%** or **1024 px**); automatic image-derived badge color is now the fresh-install default while existing saved choices are preserved.
+- Polished the optional automatic-actions layout: upload analysis and automatic classification now use a consistent card hierarchy, with the confidence threshold visually grouped beneath automatic classification instead of appearing inside a nested/double-bordered box.
+- Added attachment-level Media Library classification with simple publisher-facing statuses: AI-generated, AI-modified, no AI used, or unclassified, while preserving more precise edited/enhanced provenance where known.
+- Extended the same publisher-facing classification to uploaded videos and Gutenberg Video blocks. Video disclosures are placed immediately below the playback surface so they do not obscure controls.
+- Added optional machine-readable `VideoObject` `digitalSourceType` records alongside existing `ImageObject` output; automated AI analysis intentionally remains image-only in 3.0.0.
+- Added Media Library list columns, filters and bulk actions, plus inheritance into Gutenberg Image and Video blocks and featured-image controls unless an explicit per-use override is set.
+- Added separate editable default visible texts for AI-generated and AI-modified media; no automatic public label is shown for no-AI or unclassified states.
+- Added optional automatic visible labels for positively AI-classified Media Library attachments; disabled by default.
+- Added experimental AI-assisted image analysis through WordPress 7.0+ AI Client / configured Connectors, direct OpenAI, Google Gemini, Anthropic Claude and Cloudflare Workers AI adapters, OpenAI-compatible HTTPS APIs, and custom HTTPS endpoints.
+- Added dynamic model discovery, alphabetical/searchable catalogues, manual model or policy entry, a compatibility test with a tiny built-in image, and a reset control. Model IDs are not hard-coded, ranked, renamed or silently substituted.
+- Added background analysis jobs for selected images, all unclassified images or the entire Media Library, with progress, cancellation, small batches, image-count limits and known-cost safety limits.
+- Added provider-independent cost/usage tracking without a bundled price table. Provider-reported cost, token usage, machine-readable pricing, manual rates and observed averages are supported; unknown costs remain explicitly unknown.
+- Kept visual AI analysis advisory: it never automatically classifies an image as “No AI used”, and high-confidence auto-application is opt-in and limited to previously unclassified images. The auto-apply threshold is administrator-adjustable with a 95% recommended default and is explicitly described as model self-confidence rather than forensic probability.
+- Added a custom-endpoint-only technical provenance path for real watermark/provenance verification without treating ordinary vision-model confidence as cryptographic proof.
+- Analysis sends a temporary resized copy by default, never modifies the Media Library original, keeps credentials server-side, uses WordPress safe HTTP requests, and makes no AI-provider calls on public frontend page views.
+- Hardened release input/output boundaries: visible disclosure text is capped server-side at 80 characters; custom and OpenAI-compatible endpoints must use HTTPS; technical provenance is accepted only from a literal JSON boolean `verified_provenance=true`; model catalogues are bounded; and remote AI/model responses have explicit size limits.
+- Hardened local image processing with bounded file-size/read checks for badge-color sampling and temporary AI-analysis images, with cleanup retained on error paths.
+- Improved conditional frontend loading by checking for relevant Image/Video blocks before parsing block trees, reducing unnecessary work on posts that cannot contain a disclosure.
+- Reviewed privileged analysis actions for capability/nonce protection, kept API credentials server-side in non-autoloaded settings or `wp-config.php`, and confirmed there are no public unauthenticated AI-analysis AJAX handlers.
+- Reorganized the settings page into Essential settings, Design and previews, Advanced options, Security/privacy/performance, and Experimental AI analysis.
+- Improved Media Library controls, touch-first compact-symbol behavior, REST/save race handling, cache-purge efficiency, responsive admin styling, and WordPress 7.1 editor compatibility.
+- Final polish from the second independent JS/CSS review: added a defensive admin field-wrapper null guard, debounced settings-preview resize updates, and explicit Windows High Contrast / forced-colors support for disclosure badges and previews.
+
 ## 2.1.4
 - Added WordPress 7.1 compatibility for the always-iframed post editor by loading image-preview styles inside the editor canvas.
 - No changes to saved block markup, frontend disclosure output, settings, or existing metadata.
