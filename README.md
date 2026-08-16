@@ -8,7 +8,13 @@ A WordPress plugin for visible AI image and video disclosures, attachment-level 
 
 By default, the plugin does not label existing content automatically. Editors can mark individual image/video uses manually, classify reusable attachments in the Media Library, and optionally enable automatic visible disclosures for positively AI-classified attachments.
 
-## Highlights in 3.0.0
+## 3.0.1 release hardening
+
+3.0.1 is a maintenance release produced after running the official WordPress Plugin Check against 3.0.0. It makes the AJAX security boundary easier for static analysis to verify, replaces direct temporary-file deletion with WordPress APIs, tightens prepared SQL shapes, completes translator annotations, and keeps GitHub-only release documents out of the production package.
+
+The optional direct OpenAI, Gemini, Anthropic and Cloudflare adapters remain intentional service integrations. WordPress 7 AI Client / Connectors is also supported. External service use is opt-in and documented in the WordPress.org `readme.txt`.
+
+## Highlights in 3.0.x
 
 - Independent top-level switches for **Images** and **Videos**; use either medium alone or both together.
 - Media Library statuses: **AI-generated**, **AI-modified**, **No AI used**, or **Unclassified**.
@@ -23,7 +29,7 @@ By default, the plugin does not label existing content automatically. Editors ca
 - WordPress 7.0+ **AI Client / Connectors** support, so configured provider credentials can be reused without storing a duplicate key in this plugin.
 - Direct OpenAI, Gemini, Anthropic and Cloudflare Workers AI modes remain available, plus administrator-supplied OpenAI-compatible HTTPS and custom HTTPS endpoints.
 - No hard-coded model IDs or provider price table.
-- AI visual analysis is advisory and never automatically declares an image “No AI used”. Automated analysis remains image-only in 3.0.0; video classification is manual.
+- AI visual analysis is advisory and never automatically declares an image “No AI used”. Automated analysis remains image-only in the 3.0.x series; video classification is manual.
 - Visual auto-classification uses an adjustable confidence threshold with a 95% recommended default. A separate custom-endpoint-only path is reserved for actual technical provenance/watermark verification.
 - Automatic AI actions are presented as a clear optional group, with the confidence threshold visually attached to automatic classification rather than shown as a second nested settings card.
 

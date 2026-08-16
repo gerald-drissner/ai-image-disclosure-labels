@@ -1027,26 +1027,28 @@ final class GDAIIDL_Plugin {
 		global $wpdb;
 
 		$settings = $this->settings();
-		$clauses  = array();
-		$values   = array();
+		$images_enabled = ! empty( $settings['enable_images'] );
+		$videos_enabled = ! empty( $settings['enable_videos'] );
 
-		if ( ! empty( $settings['enable_images'] ) ) {
-			$clauses[] = '%i.post_mime_type LIKE %s';
-			$values[]  = $wpdb->posts;
-			$values[]  = $wpdb->esc_like( 'image/' ) . '%';
-		}
-
-		if ( ! empty( $settings['enable_videos'] ) ) {
-			$clauses[] = '%i.post_mime_type LIKE %s';
-			$values[]  = $wpdb->posts;
-			$values[]  = $wpdb->esc_like( 'video/' ) . '%';
-		}
-
-		if ( empty( $clauses ) ) {
+		if ( ! $images_enabled && ! $videos_enabled ) {
 			return $where . ' AND 1=0';
 		}
 
-		return $where . $wpdb->prepare( ' AND ( ' . implode( ' OR ', $clauses ) . ' )', ...$values );
+		if ( $images_enabled && $videos_enabled ) {
+			return $where . $wpdb->prepare(
+				' AND ( %i.post_mime_type LIKE %s OR %i.post_mime_type LIKE %s )',
+				$wpdb->posts,
+				$wpdb->esc_like( 'image/' ) . '%',
+				$wpdb->posts,
+				$wpdb->esc_like( 'video/' ) . '%'
+			);
+		}
+
+		return $where . $wpdb->prepare(
+			' AND %i.post_mime_type LIKE %s',
+			$wpdb->posts,
+			$wpdb->esc_like( $images_enabled ? 'image/' : 'video/' ) . '%'
+		);
 	}
 
 	/**

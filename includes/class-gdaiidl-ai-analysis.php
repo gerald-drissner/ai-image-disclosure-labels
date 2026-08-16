@@ -556,13 +556,7 @@ final class GDAIIDL_AI_Analysis {
 				<summary><?php esc_html_e( 'Privacy and external services', 'ai-image-disclosure-labels' ); ?></summary>
 				<div>
 					<p><?php esc_html_e( 'AI analysis is optional and off by default. When it runs, a temporary resized image and a short prompt leave your WordPress server and are processed by the provider you selected. Images can contain personal or confidential information, so review the provider’s current terms, privacy/data-use rules and regional requirements before enabling analysis.', 'ai-image-disclosure-labels' ); ?></p>
-					<ul>
-						<li><a href="https://openai.com/policies/" target="_blank" rel="noopener noreferrer">OpenAI terms &amp; policies</a></li>
-						<li><a href="https://ai.google.dev/gemini-api/terms" target="_blank" rel="noopener noreferrer">Google Gemini API terms</a></li>
-						<li><a href="https://privacy.anthropic.com/" target="_blank" rel="noopener noreferrer">Anthropic privacy &amp; commercial policy center</a></li>
-						<li><a href="https://www.cloudflare.com/policies/" target="_blank" rel="noopener noreferrer">Cloudflare policies</a></li>
-					</ul>
-					<p class="description"><?php esc_html_e( 'For an OpenAI-compatible or custom endpoint, you are responsible for reviewing and documenting that service’s own terms and privacy policy.', 'ai-image-disclosure-labels' ); ?></p>
+					<p class="description"><?php esc_html_e( 'The WordPress.org readme lists the current service, terms and privacy-policy links for the built-in providers. For an OpenAI-compatible or custom endpoint, you are responsible for reviewing and documenting that service’s own terms and privacy policy.', 'ai-image-disclosure-labels' ); ?></p>
 				</div>
 			</details>
 
@@ -603,7 +597,7 @@ final class GDAIIDL_AI_Analysis {
 						<li><?php esc_html_e( 'Optionally require a private bearer token at the Worker. In WordPress, select Custom HTTPS analysis endpoint, enter the workers.dev or custom-domain endpoint, your model/policy name and the same token.', 'ai-image-disclosure-labels' ); ?></li>
 						<li><?php esc_html_e( 'Optionally support action="models" for dynamic model/policy discovery and return usage or cost_usd when your router knows the real request cost.', 'ai-image-disclosure-labels' ); ?></li>
 					</ol>
-					<p class="description"><a href="https://developers.cloudflare.com/workers-ai/configuration/bindings/" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Cloudflare: Workers AI bindings', 'ai-image-disclosure-labels' ); ?></a> · <a href="https://developers.cloudflare.com/workers/get-started/dashboard/" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Cloudflare: create a Worker in the dashboard', 'ai-image-disclosure-labels' ); ?></a></p>
+					<p class="description"><?php esc_html_e( 'Cloudflare’s current Workers AI and Worker setup documentation is listed in the WordPress.org readme together with the other external-service information.', 'ai-image-disclosure-labels' ); ?></p>
 					<p><?php esc_html_e( 'For analysis, the plugin POSTs JSON containing action="analyze", the configured model/policy, a short classification prompt and a resized base64 image. Return the fields below. resolved_model, usage, cost_usd, pricing, evidence and verified_provenance are optional.', 'ai-image-disclosure-labels' ); ?></p>
 					<pre class="gdaiidl-ai-contract">{
   "classification": "likely_ai_generated",
@@ -703,7 +697,14 @@ final class GDAIIDL_AI_Analysis {
 				<span><?php echo esc_html( $label . ' – ' . __( 'API key / token', 'ai-image-disclosure-labels' ) ); ?></span>
 				<input type="password" name="<?php echo esc_attr( self::SECRET_OPTION . '[' . $key . ']' ); ?>" value="" autocomplete="new-password" placeholder="<?php echo esc_attr( $from_const ? __( 'Supplied by wp-config.php', 'ai-image-disclosure-labels' ) : ( $stored ? __( 'Saved – leave blank to keep', 'ai-image-disclosure-labels' ) : __( 'Paste secret here', 'ai-image-disclosure-labels' ) ) ); ?>" <?php disabled( $from_const ); ?>>
 				<?php if ( $stored && ! $from_const ) : ?><small><label><input type="checkbox" name="<?php echo esc_attr( self::SECRET_OPTION . '[clear_' . $key . ']' ); ?>" value="1"> <?php esc_html_e( 'Remove saved key on Save Changes', 'ai-image-disclosure-labels' ); ?></label></small><?php endif; ?>
-				<?php if ( $from_const ) : ?><small><?php echo esc_html( sprintf( __( 'Using constant %s.', 'ai-image-disclosure-labels' ), $constant ) ); ?></small><?php endif; ?>
+				<?php if ( $from_const ) : ?>
+					<small>
+						<?php
+						/* translators: %s: wp-config.php constant name. */
+						echo esc_html( sprintf( __( 'Using constant %s.', 'ai-image-disclosure-labels' ), $constant ) );
+						?>
+					</small>
+				<?php endif; ?>
 			</label>
 		</div>
 		<?php
@@ -993,7 +994,13 @@ final class GDAIIDL_AI_Analysis {
 		}
 		$count = absint( wp_unslash( $_GET['gdaiidl_analysis_processed'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$job = isset( $_GET['gdaiidl_analysis_job'] ) ? sanitize_key( wp_unslash( $_GET['gdaiidl_analysis_job'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$message = $job ? sprintf( __( 'AI analysis queued for %d selected image(s). It will run in background batches.', 'ai-image-disclosure-labels' ), $count ) : sprintf( __( '%d selected image(s) processed.', 'ai-image-disclosure-labels' ), $count );
+		if ( $job ) {
+			/* translators: %d: number of selected images queued for analysis. */
+			$message = sprintf( __( 'AI analysis queued for %d selected image(s). It will run in background batches.', 'ai-image-disclosure-labels' ), $count );
+		} else {
+			/* translators: %d: number of selected images processed. */
+			$message = sprintf( __( '%d selected image(s) processed.', 'ai-image-disclosure-labels' ), $count );
+		}
 		echo '<div class="notice notice-success is-dismissible"><p>' . esc_html( $message ) . '</p></div>';
 	}
 
@@ -1020,12 +1027,12 @@ final class GDAIIDL_AI_Analysis {
 	 * @return void
 	 */
 	public function ajax_fetch_models() {
-		$this->check_ajax_admin();
+		$request = $this->ajax_request();
 		$context = array(
-			'provider'                   => isset( $_POST['provider'] ) ? sanitize_key( wp_unslash( $_POST['provider'] ) ) : '',
-			'cloudflare_account_id'      => isset( $_POST['cloudflare_account_id'] ) ? sanitize_text_field( wp_unslash( $_POST['cloudflare_account_id'] ) ) : '',
-			'custom_endpoint'            => isset( $_POST['custom_endpoint'] ) ? $this->sanitize_https_endpoint( wp_unslash( $_POST['custom_endpoint'] ) ) : '',
-			'compatible_models_endpoint' => isset( $_POST['compatible_models_endpoint'] ) ? $this->sanitize_https_endpoint( wp_unslash( $_POST['compatible_models_endpoint'] ) ) : '',
+			'provider'                   => $request['provider'],
+			'cloudflare_account_id'      => $request['cloudflare_account_id'],
+			'custom_endpoint'            => $request['custom_endpoint'],
+			'compatible_models_endpoint' => $request['compatible_models_endpoint'],
 		);
 		$result = $this->fetch_models( $context, true );
 		if ( is_wp_error( $result ) ) {
@@ -1042,9 +1049,9 @@ final class GDAIIDL_AI_Analysis {
 	 * @return void
 	 */
 	public function ajax_test_model() {
-		$this->check_ajax_admin();
-		$provider = isset( $_POST['provider'] ) ? sanitize_key( wp_unslash( $_POST['provider'] ) ) : '';
-		$model    = isset( $_POST['model'] ) ? substr( sanitize_text_field( wp_unslash( $_POST['model'] ) ), 0, 220 ) : '';
+		$request  = $this->ajax_request();
+		$provider = $request['provider'];
+		$model    = $request['model'];
 		$providers = $this->providers();
 		if ( ! isset( $providers[ $provider ] ) || ( 'wordpress_ai_client' !== $provider && '' === trim( $model ) ) ) {
 			wp_send_json_error( array( 'message' => __( 'Choose a provider and model before testing.', 'ai-image-disclosure-labels' ) ), 400 );
@@ -1054,10 +1061,10 @@ final class GDAIIDL_AI_Analysis {
 			array(
 				'provider'                   => $provider,
 				'model'                      => $model,
-				'cloudflare_account_id'      => isset( $_POST['cloudflare_account_id'] ) ? substr( sanitize_text_field( wp_unslash( $_POST['cloudflare_account_id'] ) ), 0, 120 ) : '',
-				'custom_endpoint'            => isset( $_POST['custom_endpoint'] ) ? $this->sanitize_https_endpoint( wp_unslash( $_POST['custom_endpoint'] ) ) : '',
-				'compatible_endpoint'        => isset( $_POST['compatible_endpoint'] ) ? $this->sanitize_https_endpoint( wp_unslash( $_POST['compatible_endpoint'] ) ) : '',
-				'compatible_models_endpoint' => isset( $_POST['compatible_models_endpoint'] ) ? $this->sanitize_https_endpoint( wp_unslash( $_POST['compatible_models_endpoint'] ) ) : '',
+				'cloudflare_account_id'      => $request['cloudflare_account_id'],
+				'custom_endpoint'            => $request['custom_endpoint'],
+				'compatible_endpoint'        => $request['compatible_endpoint'],
+				'compatible_models_endpoint' => $request['compatible_models_endpoint'],
 			),
 			$this->settings()
 		);
@@ -1121,8 +1128,8 @@ final class GDAIIDL_AI_Analysis {
 
 	/** AJAX prepare job. */
 	public function ajax_prepare_job() {
-		$this->check_ajax_admin();
-		$scope = isset( $_POST['scope'] ) ? sanitize_key( wp_unslash( $_POST['scope'] ) ) : '';
+		$request = $this->ajax_request();
+		$scope = $request['scope'];
 		if ( ! in_array( $scope, array( 'all', 'unclassified' ), true ) ) {
 			wp_send_json_error( array( 'message' => __( 'Invalid analysis scope.', 'ai-image-disclosure-labels' ) ), 400 );
 		}
@@ -1138,8 +1145,8 @@ final class GDAIIDL_AI_Analysis {
 
 	/** AJAX start job. */
 	public function ajax_start_job() {
-		$this->check_ajax_admin();
-		$scope = isset( $_POST['scope'] ) ? sanitize_key( wp_unslash( $_POST['scope'] ) ) : '';
+		$request = $this->ajax_request();
+		$scope = $request['scope'];
 		if ( ! in_array( $scope, array( 'all', 'unclassified' ), true ) || ! $this->is_configured() ) {
 			wp_send_json_error( array( 'message' => __( 'Analysis is not fully configured.', 'ai-image-disclosure-labels' ) ), 400 );
 		}
@@ -1152,15 +1159,15 @@ final class GDAIIDL_AI_Analysis {
 
 	/** AJAX status. */
 	public function ajax_job_status() {
-		$this->check_ajax_admin();
-		$job_id = isset( $_POST['job_id'] ) ? sanitize_key( wp_unslash( $_POST['job_id'] ) ) : '';
+		$request = $this->ajax_request();
+		$job_id = $request['job_id'];
 		wp_send_json_success( array( 'html' => $this->job_status_html( $job_id ), 'job' => $this->get_job( $job_id ) ) );
 	}
 
 	/** AJAX cancel. */
 	public function ajax_cancel_job() {
-		$this->check_ajax_admin();
-		$job_id = isset( $_POST['job_id'] ) ? sanitize_key( wp_unslash( $_POST['job_id'] ) ) : '';
+		$request = $this->ajax_request();
+		$job_id = $request['job_id'];
 		$jobs = $this->jobs();
 		if ( isset( $jobs[ $job_id ] ) && in_array( $jobs[ $job_id ]['status'], array( 'queued', 'running' ), true ) ) {
 			$jobs[ $job_id ]['status'] = 'cancelled';
@@ -1171,15 +1178,40 @@ final class GDAIIDL_AI_Analysis {
 	}
 
 	/**
-	 * Check AJAX auth.
+	 * Authenticate and sanitize an AI-admin AJAX request.
 	 *
-	 * @return void
+	 * Keeping nonce verification and input access in the same method makes the
+	 * security boundary explicit to both reviewers and static analysis.
+	 *
+	 * @return array<string,string> Sanitized request values.
 	 */
-	private function check_ajax_admin() {
+	private function ajax_request() {
 		check_ajax_referer( 'gdaiidl_ai_admin', 'nonce' );
+
 		if ( ! current_user_can( $this->analysis_capability() ) ) {
 			wp_send_json_error( array( 'message' => __( 'You do not have permission to manage AI analysis.', 'ai-image-disclosure-labels' ) ), 403 );
 		}
+
+		$custom_endpoint = isset( $_POST['custom_endpoint'] )
+			? esc_url_raw( wp_unslash( $_POST['custom_endpoint'] ), array( 'https' ) )
+			: '';
+		$compatible_endpoint = isset( $_POST['compatible_endpoint'] )
+			? esc_url_raw( wp_unslash( $_POST['compatible_endpoint'] ), array( 'https' ) )
+			: '';
+		$compatible_models_endpoint = isset( $_POST['compatible_models_endpoint'] )
+			? esc_url_raw( wp_unslash( $_POST['compatible_models_endpoint'] ), array( 'https' ) )
+			: '';
+
+		return array(
+			'provider'                   => isset( $_POST['provider'] ) ? sanitize_key( wp_unslash( $_POST['provider'] ) ) : '',
+			'model'                      => isset( $_POST['model'] ) ? substr( sanitize_text_field( wp_unslash( $_POST['model'] ) ), 0, 220 ) : '',
+			'cloudflare_account_id'      => isset( $_POST['cloudflare_account_id'] ) ? substr( sanitize_text_field( wp_unslash( $_POST['cloudflare_account_id'] ) ), 0, 120 ) : '',
+			'custom_endpoint'            => $this->sanitize_https_endpoint( $custom_endpoint ),
+			'compatible_endpoint'        => $this->sanitize_https_endpoint( $compatible_endpoint ),
+			'compatible_models_endpoint' => $this->sanitize_https_endpoint( $compatible_models_endpoint ),
+			'scope'                      => isset( $_POST['scope'] ) ? sanitize_key( wp_unslash( $_POST['scope'] ) ) : '',
+			'job_id'                     => isset( $_POST['job_id'] ) ? sanitize_key( wp_unslash( $_POST['job_id'] ) ) : '',
+		);
 	}
 
 	/** Capability required to spend external AI resources. */
@@ -1444,12 +1476,35 @@ final class GDAIIDL_AI_Analysis {
 	 */
 	private function count_scope_images( $scope ) {
 		global $wpdb;
+
 		if ( 'unclassified' === $scope ) {
-			$sql = "SELECT COUNT(DISTINCT p.ID) FROM {$wpdb->posts} p LEFT JOIN {$wpdb->postmeta} pm ON (p.ID = pm.post_id AND pm.meta_key = %s) WHERE p.post_type = 'attachment' AND p.post_status <> 'trash' AND p.post_mime_type LIKE 'image/%%' AND (pm.meta_id IS NULL OR pm.meta_value = '' OR pm.meta_value NOT IN ('no-ai','generated','modified','edited','enhanced'))";
-			return (int) $wpdb->get_var( $wpdb->prepare( $sql, GDAIIDL_Plugin::META_MEDIA_SOURCE_TYPE ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			$query = $wpdb->prepare(
+				"SELECT COUNT(DISTINCT p.ID)
+				FROM %i p
+				LEFT JOIN %i pm ON (p.ID = pm.post_id AND pm.meta_key = %s)
+				WHERE p.post_type = 'attachment'
+				AND p.post_status <> 'trash'
+				AND p.post_mime_type LIKE 'image/%%'
+				AND (pm.meta_id IS NULL OR pm.meta_value = '' OR pm.meta_value NOT IN ('no-ai','generated','modified','edited','enhanced'))",
+				$wpdb->posts,
+				$wpdb->postmeta,
+				GDAIIDL_Plugin::META_MEDIA_SOURCE_TYPE
+			);
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared -- Query was prepared immediately above; admin-only background-job count is intentionally uncached.
+			return (int) $wpdb->get_var( $query );
 		}
-		$sql = "SELECT COUNT(ID) FROM {$wpdb->posts} WHERE post_type = 'attachment' AND post_status <> 'trash' AND post_mime_type LIKE 'image/%%'";
-		return (int) $wpdb->get_var( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+
+		$query = $wpdb->prepare(
+			"SELECT COUNT(ID)
+			FROM %i
+			WHERE post_type = 'attachment'
+			AND post_status <> 'trash'
+			AND post_mime_type LIKE %s",
+			$wpdb->posts,
+			'image/%'
+		);
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared -- Query was prepared immediately above; admin-only background-job count is intentionally uncached.
+		return (int) $wpdb->get_var( $query );
 	}
 
 	/**
@@ -1462,16 +1517,46 @@ final class GDAIIDL_AI_Analysis {
 	 */
 	private function query_scope_ids_after( $scope, $after_id, $limit ) {
 		global $wpdb;
-		$limit = max( 1, min( 50, (int) $limit ) );
+		$limit    = max( 1, min( 50, (int) $limit ) );
 		$after_id = max( 0, (int) $after_id );
+
 		if ( 'unclassified' === $scope ) {
-			$sql = "SELECT DISTINCT p.ID FROM {$wpdb->posts} p LEFT JOIN {$wpdb->postmeta} pm ON (p.ID = pm.post_id AND pm.meta_key = %s) WHERE p.post_type = 'attachment' AND p.post_status <> 'trash' AND p.post_mime_type LIKE 'image/%%' AND p.ID > %d AND (pm.meta_id IS NULL OR pm.meta_value = '' OR pm.meta_value NOT IN ('no-ai','generated','modified','edited','enhanced')) ORDER BY p.ID ASC LIMIT %d";
-			$prepared = $wpdb->prepare( $sql, GDAIIDL_Plugin::META_MEDIA_SOURCE_TYPE, $after_id, $limit );
+			$prepared = $wpdb->prepare(
+				"SELECT DISTINCT p.ID
+				FROM %i p
+				LEFT JOIN %i pm ON (p.ID = pm.post_id AND pm.meta_key = %s)
+				WHERE p.post_type = 'attachment'
+				AND p.post_status <> 'trash'
+				AND p.post_mime_type LIKE 'image/%%'
+				AND p.ID > %d
+				AND (pm.meta_id IS NULL OR pm.meta_value = '' OR pm.meta_value NOT IN ('no-ai','generated','modified','edited','enhanced'))
+				ORDER BY p.ID ASC
+				LIMIT %d",
+				$wpdb->posts,
+				$wpdb->postmeta,
+				GDAIIDL_Plugin::META_MEDIA_SOURCE_TYPE,
+				$after_id,
+				$limit
+			);
 		} else {
-			$sql = "SELECT ID FROM {$wpdb->posts} WHERE post_type = 'attachment' AND post_status <> 'trash' AND post_mime_type LIKE 'image/%%' AND ID > %d ORDER BY ID ASC LIMIT %d";
-			$prepared = $wpdb->prepare( $sql, $after_id, $limit );
+			$prepared = $wpdb->prepare(
+				"SELECT ID
+				FROM %i
+				WHERE post_type = 'attachment'
+				AND post_status <> 'trash'
+				AND post_mime_type LIKE %s
+				AND ID > %d
+				ORDER BY ID ASC
+				LIMIT %d",
+				$wpdb->posts,
+				'image/%',
+				$after_id,
+				$limit
+			);
 		}
-		return array_map( 'absint', (array) $wpdb->get_col( $prepared ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared -- Query was prepared immediately above; cursor-based background-job query is intentionally uncached.
+		return array_map( 'absint', (array) $wpdb->get_col( $prepared ) );
 	}
 
 	/**
@@ -1570,22 +1655,22 @@ final class GDAIIDL_AI_Analysis {
 		}
 		$saved = $editor->save( $tmp, 'image/jpeg' );
 		if ( is_wp_error( $saved ) || empty( $saved['path'] ) || ! is_readable( $saved['path'] ) ) {
-			@unlink( $tmp ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+			wp_delete_file( $tmp );
 			return is_wp_error( $saved ) ? $saved : new WP_Error( 'gdaiidl_temp_failed', __( 'Could not write the temporary analysis image.', 'ai-image-disclosure-labels' ) );
 		}
 		$max_bytes = 8 * MB_IN_BYTES;
 		$temp_size = @filesize( $saved['path'] ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- temporary file can disappear; handled below.
 		if ( false === $temp_size || $temp_size <= 0 || $temp_size > $max_bytes ) {
-			@unlink( $saved['path'] ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+			wp_delete_file( $saved['path'] );
 			if ( $saved['path'] !== $tmp && file_exists( $tmp ) ) {
-				@unlink( $tmp ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+				wp_delete_file( $tmp );
 			}
 			return new WP_Error( 'gdaiidl_temp_size', __( 'The temporary analysis image is unexpectedly large or unreadable.', 'ai-image-disclosure-labels' ) );
 		}
 		$data = file_get_contents( $saved['path'] ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- bounded temporary file.
-		@unlink( $saved['path'] ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+		wp_delete_file( $saved['path'] );
 		if ( $saved['path'] !== $tmp && file_exists( $tmp ) ) {
-			@unlink( $tmp ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+			wp_delete_file( $tmp );
 		}
 		if ( false === $data || '' === $data || strlen( $data ) > $max_bytes ) {
 			return new WP_Error( 'gdaiidl_read_failed', __( 'Could not safely read the temporary analysis image.', 'ai-image-disclosure-labels' ) );
@@ -1650,10 +1735,14 @@ final class GDAIIDL_AI_Analysis {
 			if ( isset( $data['message'] ) ) { $candidates[] = $data['message']; }
 		}
 		foreach ( $candidates as $candidate ) {
-			if ( is_string( $candidate ) && '' !== trim( $candidate ) ) { return sprintf( __( 'Provider error %1$d: %2$s', 'ai-image-disclosure-labels' ), $code, sanitize_text_field( $candidate ) ); }
+			if ( is_string( $candidate ) && '' !== trim( $candidate ) ) {
+				/* translators: 1: HTTP/status code, 2: provider error message. */
+				return sprintf( __( 'Provider error %1$d: %2$s', 'ai-image-disclosure-labels' ), $code, sanitize_text_field( $candidate ) );
+			}
 		}
 		$raw = trim( wp_strip_all_tags( (string) $raw ) );
-		return sprintf( __( 'Provider returned HTTP %d.%s', 'ai-image-disclosure-labels' ), $code, '' !== $raw ? ' ' . substr( $raw, 0, 300 ) : '' );
+		/* translators: 1: HTTP status code, 2: optional provider response excerpt including its leading space. */
+		return sprintf( __( 'Provider returned HTTP %1$d.%2$s', 'ai-image-disclosure-labels' ), $code, '' !== $raw ? ' ' . substr( $raw, 0, 300 ) : '' );
 	}
 
 	/** OpenAI Responses API. */
@@ -2416,10 +2505,17 @@ final class GDAIIDL_AI_Analysis {
 		$total = max( 1, (int) $job['total'] ); $processed = (int) $job['processed']; $percent = min( 100, (int) round( 100 * $processed / $total ) );
 		$status_labels = array( 'queued' => __( 'Queued', 'ai-image-disclosure-labels' ), 'running' => __( 'Running', 'ai-image-disclosure-labels' ), 'completed' => __( 'Completed', 'ai-image-disclosure-labels' ), 'cancelled' => __( 'Cancelled', 'ai-image-disclosure-labels' ), 'stopped_cost' => __( 'Stopped at cost limit', 'ai-image-disclosure-labels' ), 'stopped_config' => __( 'Stopped because settings changed', 'ai-image-disclosure-labels' ) );
 		$status = isset( $status_labels[ $job['status'] ] ) ? $status_labels[ $job['status'] ] : $job['status'];
-		$html = '<div class="gdaiidl-ai-job" data-job-id="' . esc_attr( $job_id ) . '"><p><strong>' . esc_html( $status ) . '</strong> · ' . esc_html( sprintf( __( '%1$d / %2$d images (%3$d%%)', 'ai-image-disclosure-labels' ), $processed, (int) $job['total'], $percent ) ) . '</p>';
+		/* translators: 1: processed image count, 2: total image count, 3: completion percentage. */
+		$progress_text = sprintf( __( '%1$d / %2$d images (%3$d%%)', 'ai-image-disclosure-labels' ), $processed, (int) $job['total'], $percent );
+		/* translators: 1: AI-generated count, 2: AI-modified count, 3: likely non-AI count, 4: uncertain count, 5: failed count. */
+		$result_text = sprintf( __( 'Generated: %1$d · Modified: %2$d · Likely non-AI: %3$d · Uncertain: %4$d · Failed: %5$d', 'ai-image-disclosure-labels' ), (int) $job['generated'], (int) $job['modified'], (int) $job['non_ai'], (int) $job['uncertain'], (int) $job['failed'] );
+		/* translators: 1: known or estimated US-dollar cost, 2: number of requests for which cost was unavailable. */
+		$cost_text = sprintf( __( 'Known/estimated cost recorded by the plugin: $%1$.6f · Requests with unknown cost: %2$d', 'ai-image-disclosure-labels' ), (float) $job['known_cost'], (int) $job['unknown_cost_count'] );
+
+		$html = '<div class="gdaiidl-ai-job" data-job-id="' . esc_attr( $job_id ) . '"><p><strong>' . esc_html( $status ) . '</strong> · ' . esc_html( $progress_text ) . '</p>';
 		$html .= '<div class="gdaiidl-ai-progress"><span style="width:' . esc_attr( $percent ) . '%"></span></div>';
-		$html .= '<p class="description">' . esc_html( sprintf( __( 'Generated: %1$d · Modified: %2$d · Likely non-AI: %3$d · Uncertain: %4$d · Failed: %5$d', 'ai-image-disclosure-labels' ), (int) $job['generated'], (int) $job['modified'], (int) $job['non_ai'], (int) $job['uncertain'], (int) $job['failed'] ) ) . '</p>';
-		$html .= '<p class="description">' . esc_html( sprintf( __( 'Known/estimated cost recorded by the plugin: $%1$.6f · Requests with unknown cost: %2$d', 'ai-image-disclosure-labels' ), (float) $job['known_cost'], (int) $job['unknown_cost_count'] ) ) . '</p>';
+		$html .= '<p class="description">' . esc_html( $result_text ) . '</p>';
+		$html .= '<p class="description">' . esc_html( $cost_text ) . '</p>';
 		if ( ! empty( $job['last_error'] ) ) { $html .= '<p class="description gdaiidl-ai-error">' . esc_html( $job['last_error'] ) . '</p>'; }
 		if ( in_array( $job['status'], array( 'queued', 'running' ), true ) ) { $html .= '<p><button type="button" class="button-link-delete gdaiidl-ai-cancel-job" data-job-id="' . esc_attr( $job_id ) . '">' . esc_html__( 'Cancel job', 'ai-image-disclosure-labels' ) . '</button></p>'; }
 		$html .= '</div>';

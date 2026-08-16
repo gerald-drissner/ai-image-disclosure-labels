@@ -9,7 +9,7 @@ Use semantic versioning.
 For WordPress.org deployments, the Git tag must match the `Stable tag` exactly. For example:
 
 ```text
-3.0.0
+3.0.1
 ```
 
 Do not prefix the tag with `v` in this repository because the deployment action uses the Git tag as the WordPress.org SVN tag.
@@ -47,18 +47,18 @@ cd /home/gd/github/ai-image-disclosure-labels
 
 git status
 git add --all
-git commit -m "Release 3.0.0"
+git commit -m "Release 3.0.1"
 git push origin main
 
 # Wait for Plugin Check to pass before tagging.
 gh run list --branch main --limit 5
 
-git tag -a 3.0.0 -m "AI Image & Video Disclosure Labels 3.0.0"
-git push origin 3.0.0
+git tag -a 3.0.1 -m "AI Image & Video Disclosure Labels 3.0.1"
+git push origin 3.0.1
 
-gh release create 3.0.0 \
-  --title "AI Image & Video Disclosure Labels 3.0.0" \
-  --notes-file RELEASE_NOTES_3.0.0.md
+gh release create 3.0.1 \
+  --title "AI Image & Video Disclosure Labels 3.0.1" \
+  --notes-file RELEASE_NOTES_3.0.1.md
 ```
 
 Publishing the GitHub Release triggers the existing `.github/workflows/deploy-wordpress.yml` workflow. That workflow uses `10up/action-wordpress-plugin-deploy@stable` with `SLUG=ai-image-disclosure-labels`, pushes the release to the WordPress.org SVN repository, synchronizes `.wordpress-org` assets, and attaches the generated plugin ZIP to the GitHub Release. Do not manually commit a second copy to SVN after a successful workflow run.
@@ -66,7 +66,7 @@ Publishing the GitHub Release triggers the existing `.github/workflows/deploy-wo
 ## Verify WordPress.org SVN after deployment
 
 ```fish
-set VERSION 3.0.0
+set VERSION 3.0.1
 set SVN_URL https://plugins.svn.wordpress.org/ai-image-disclosure-labels
 
 svn cat "$SVN_URL/trunk/readme.txt" | grep -F "Stable tag: $VERSION"

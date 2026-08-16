@@ -3,7 +3,7 @@
  * Plugin Name:       AI Image & Video Disclosure Labels
  * Plugin URI:        https://github.com/gerald-drissner/ai-image-disclosure-labels
  * Description:       Adds visible AI disclosure labels for images and videos, Media Library classification, optional machine-readable source data, and optional AI-assisted image analysis.
- * Version:           3.0.0
+ * Version:           3.0.1
  * Requires at least: 6.7
  * Requires PHP:      7.4
  * Author:            Gerald Drißner
@@ -15,7 +15,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'GDAIIDL_VERSION', '3.0.0' );
+define( 'GDAIIDL_VERSION', '3.0.1' );
 define( 'GDAIIDL_FILE', __FILE__ );
 define( 'GDAIIDL_DIR', plugin_dir_path( __FILE__ ) );
 define( 'GDAIIDL_URL', plugin_dir_url( __FILE__ ) );

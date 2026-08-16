@@ -1,5 +1,18 @@
 # Changelog
 
+## 3.0.1
+
+- Release-hardening update after the official WordPress Plugin Check run on 3.0.0.
+- Consolidated AI-admin AJAX input handling so nonce verification, capability checks and sanitization are explicit at one request boundary.
+- Replaced temporary-file `unlink()` calls with `wp_delete_file()`.
+- Reworked Media Library MIME filtering to use fixed prepared query shapes and tightened preparation of the background AI job queries.
+- Added targeted PHPCS rationale for the narrow admin-only direct database reads used by cursor-based bulk analysis.
+- Added the missing translator comments and ordered translation placeholders.
+- Removed remote documentation links from PHP admin markup while retaining complete external-service disclosure and policy links in `readme.txt`.
+- Added/updated `.distignore` so GitHub-only release notes, audits and development files cannot enter the WordPress.org package.
+- Updated Plugin Check CI to ignore only the `PluginCheck.CodeAnalysis.AIProvider.DirectIntegration` advisory. Direct provider adapters are intentional optional service integrations; WordPress AI Client / Connectors is also supported.
+
+
 ## 3.0.0
 
 > Major update since the previously published 2.1.4 release. The unpublished 2.2.x-2.5.x development builds are folded into 3.0.0.

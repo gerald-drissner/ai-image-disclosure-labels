@@ -5,7 +5,7 @@ Tags: ai image, ai video, ai generated content, content transparency, eu ai act
 Requires at least: 6.7
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 3.0.0
+Stable tag: 3.0.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -32,7 +32,7 @@ Article 50 of the EU AI Act distinguishes between providers and deployers of AI 
 * Simplified Media Library classification aligned with plain disclosure language: AI-generated, AI-modified, no AI used, or unclassified. More precise legacy technical provenance is retained internally when available.
 * Media Library list tools: an AI status column, status filter and grouped bulk actions make it possible to classify many images and videos without opening them individually.
 * Optional automatic visible disclosures for AI-classified Media Library images and videos; this remains off by default.
-* Optional AI-assisted image analysis through the WordPress 7.0+ AI Client / configured Connectors when available, or directly through OpenAI, Google Gemini, Anthropic Claude, Cloudflare Workers AI, an OpenAI-compatible HTTPS endpoint, or a custom HTTPS analysis endpoint. Automated analysis remains image-only in 3.0.0; videos are classified manually.
+* Optional AI-assisted image analysis through the WordPress 7.0+ AI Client / configured Connectors when available, or directly through OpenAI, Google Gemini, Anthropic Claude, Cloudflare Workers AI, an OpenAI-compatible HTTPS endpoint, or a custom HTTPS analysis endpoint. Automated analysis remains image-only in the 3.0.x series; videos are classified manually.
 * Dynamic model discovery where the provider exposes a Models API or, in WordPress AI Client mode, through the configured AI provider registry; model names are never hard-coded and manual model/policy names remain supported.
 * Provider-independent custom HTTPS endpoint contract for Cloudflare Workers, AI Gateway, dedicated detectors and other future services.
 * AI analysis is stored separately from the publisher-facing status. Suggestions can be reviewed, filtered and bulk-applied; “likely non-AI” is never converted to “No AI used” automatically.
@@ -132,7 +132,7 @@ It is an explicit publisher-entered classification for media for which you want 
 
 = Can the plugin automatically detect AI-generated images? =
 
-Version 3.0.0 can optionally ask a configured external vision-capable AI service to assess an image and store a suggestion such as "likely AI-generated", "likely AI-modified", "likely non-AI" or "uncertain". This is probabilistic analysis, not forensic proof. General vision models can be wrong; an absent watermark or a "likely non-AI" answer does not prove that no AI was used.
+Version 3.0.x can optionally ask a configured external vision-capable AI service to assess an image and store a suggestion such as "likely AI-generated", "likely AI-modified", "likely non-AI" or "uncertain". This is probabilistic analysis, not forensic proof. General vision models can be wrong; an absent watermark or a "likely non-AI" answer does not prove that no AI was used.
 The built-in direct-provider adapters perform visual analysis; they do not claim to cryptographically verify C2PA, SynthID or proprietary provider watermarks. If you operate a custom endpoint that performs genuine provenance/watermark verification, it can return `verified_provenance=true` and evidence labels. Automatic application of that stronger signal is a separate opt-in setting.
 
 The analysis result is deliberately separate from the publisher-facing AI status. Automatic application is off by default and, if enabled, only high-confidence AI-generated/AI-modified suggestions can be applied to previously unclassified images. The plugin never automatically declares "No AI used".
@@ -157,7 +157,7 @@ For a short Cloudflare setup: create a Worker under Workers & Pages, add a Worke
 
 = How are AI videos labelled? =
 
-For the core WordPress Video block, enable the AI disclosure in the block sidebar or classify the uploaded video in the Media Library and enable automatic Media Library labels. The disclosure appears immediately below the video, outside the playback surface. This avoids covering native controls and works with captions because it is inserted before the figure caption. Optional machine-readable output uses a Schema.org `VideoObject`. AI-assisted frame/video analysis is not included in 3.0.0.
+For the core WordPress Video block, enable the AI disclosure in the block sidebar or classify the uploaded video in the Media Library and enable automatic Media Library labels. The disclosure appears immediately below the video, outside the playback surface. This avoids covering native controls and works with captions because it is inserted before the figure caption. Optional machine-readable output uses a Schema.org `VideoObject`. AI-assisted frame/video analysis is not included in the 3.0.x series.
 
 = Does AI analysis send my images to another service? =
 
@@ -218,6 +218,16 @@ Yes. Choose "Custom symbol" and select a PNG or SVG file from the Media Library.
 For support, visit [drissner.media/kontakt](https://drissner.media/kontakt). If the plugin is useful to you, you can support its development through [PayPal](https://www.paypal.com/paypalme/drissner).
 
 == Changelog ==
+
+= 3.0.1 =
+* Release-hardening update following the official WordPress Plugin Check run for 3.0.0.
+* Consolidated AI-admin AJAX input handling so nonce verification, capability checks and sanitization are explicit in the same request boundary.
+* Replaced temporary-file `unlink()` calls with WordPress `wp_delete_file()`.
+* Reworked the Media Library MIME SQL filter to use fixed prepared query shapes instead of dynamically assembled placeholders.
+* Hardened background-job SQL preparation and documented the narrow, admin-only direct-query exceptions used for cursor-based library scans.
+* Added missing translator comments and ordered placeholders in translatable strings.
+* Removed remote documentation links from PHP-rendered admin markup; provider terms/privacy/service links remain clearly documented in `readme.txt`.
+* Updated the distribution ignore rules so GitHub-only release notes and audit documents are never included in the WordPress.org production ZIP.
 
 = 3.0.0 =
 * Major update since the previously published 2.1.4 release. Unpublished 2.2.x-2.5.x development builds are consolidated into this release.
