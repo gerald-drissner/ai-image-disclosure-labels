@@ -273,15 +273,56 @@
 		}
 
 		const frame = label.closest( '.gd-ai-image-frame, .gd-ai-featured-theme-fallback' ) || label;
+		const image = getLabelImage( label );
 
 		for ( let index = 0; index < selectors.length; index += 1 ) {
 			try {
-				if ( frame.matches( selectors[ index ] ) || frame.closest( selectors[ index ] ) ) {
+				if (
+					frame.matches( selectors[ index ] ) ||
+					frame.closest( selectors[ index ] ) ||
+					( image && image.matches( selectors[ index ] ) )
+				) {
 					return true;
 				}
 			} catch ( error ) {
 				/* Ignore invalid selectors rather than breaking all labels. */
 			}
+		}
+
+		return false;
+	}
+
+	function restoreLocationHiddenFeaturedMarkup( label ) {
+		if ( ! label ) {
+			return false;
+		}
+
+		const wrapper = label.closest( '.gd-ai-featured-wrap' );
+
+		if ( wrapper && wrapper.parentNode ) {
+			const parent = wrapper.parentNode;
+			label.remove();
+
+			while ( wrapper.firstChild ) {
+				parent.insertBefore( wrapper.firstChild, wrapper );
+			}
+
+			wrapper.remove();
+			return true;
+		}
+
+		/*
+		 * The JavaScript featured-image fallback reuses a theme-owned container
+		 * instead of creating a wrapper. If that fallback label is hidden by a
+		 * location rule, remove only the classes/data that this plugin added.
+		 */
+		const fallback = label.closest( '.gd-ai-featured-theme-fallback' );
+
+		if ( fallback && fallback.dataset.gdAiFeaturedLabel === '1' ) {
+			label.remove();
+			fallback.classList.remove( 'gd-ai-image-frame', 'gd-ai-featured-theme-fallback' );
+			delete fallback.dataset.gdAiFeaturedLabel;
+			return true;
 		}
 
 		return false;
@@ -319,6 +360,18 @@
 
 		syncTouchCompactClass( label );
 
+		const locationMode = getLocationMode( label );
+
+		/*
+		 * A featured-image disclosure may add a lightweight wrapper or temporary
+		 * classes to a host-theme container. When a location rule explicitly
+		 * hides the disclosure, restore the original theme markup so its overlays,
+		 * counters, hover effects and structural selectors remain untouched.
+		 */
+		if ( locationMode === 'hidden' && restoreLocationHiddenFeaturedMarkup( label ) ) {
+			return;
+		}
+
 		const image = getLabelImage( label );
 
 		if ( ! image ) {
@@ -334,8 +387,6 @@
 		}
 
 		syncTooltipForWidth( label, renderedWidth );
-
-		const locationMode = getLocationMode( label );
 
 		if ( ! locationMode && frameUsesContainerQueries( label ) ) {
 			return;

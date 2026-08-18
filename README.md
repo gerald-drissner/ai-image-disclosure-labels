@@ -8,6 +8,10 @@ A WordPress plugin for visible AI image and video disclosures, attachment-level 
 
 By default, the plugin does not label existing content automatically. Editors can mark individual image/video uses manually, classify reusable attachments in the Media Library, and optionally enable automatic visible disclosures for positively AI-classified attachments.
 
+## 3.0.2 theme compatibility fix
+
+3.0.2 fixes a generic frontend compatibility issue in hidden location rules. When a configured location suppresses an AI disclosure, the plugin now removes its own featured-image wrapper and restores the host theme's original markup. This prevents theme-owned counters, overlays, hover effects and structural CSS selectors from being disrupted. Location selectors can also match the image element itself, the disclosure frame or an ancestor. The 3.0.2 change adds no Newsblock-specific branch or new theme-specific selector.
+
 ## 3.0.1 release hardening
 
 3.0.1 is a maintenance release produced after running the official WordPress Plugin Check against 3.0.0. It makes the AJAX security boundary easier for static analysis to verify, replaces direct temporary-file deletion with WordPress APIs, tightens prepared SQL shapes, completes translator annotations, and keeps GitHub-only release documents out of the production package.

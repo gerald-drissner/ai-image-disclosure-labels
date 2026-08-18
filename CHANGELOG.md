@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.0.2
+
+- Fixed a theme-compatibility issue where hiding an AI disclosure at a configured location could leave the plugin's featured-image wrapper in place and interfere with theme-owned thumbnail overlays, counters, hover effects or structural CSS selectors.
+- Hidden location rules now restore the host theme's original featured-image markup by removing the disclosure label and the plugin-added wrapper.
+- Location selectors can now match the image element itself as well as the disclosure frame or an ancestor, making selector rules more predictable across themes and page builders.
+- The compatibility fix is generic and contains no theme-specific selectors or Newsblock-only behavior.
+
 ## 3.0.1
 
 - Release-hardening update after the official WordPress Plugin Check run on 3.0.0.

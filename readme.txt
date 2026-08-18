@@ -5,7 +5,7 @@ Tags: ai image, ai video, ai generated content, content transparency, eu ai act
 Requires at least: 6.7
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 3.0.1
+Stable tag: 3.0.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -183,7 +183,7 @@ Open Settings > AI Image & Video Labels > Theme integration and add the CSS sele
 
 = How do location-specific display rules work? =
 
-Enable the rules under Settings > AI Image & Video Labels > Location-specific display. Add one CSS selector per line. An icon-only rule changes an existing disclosure in the matched area to the compact symbol; a hidden rule removes that visible disclosure in the matched area. These rules never mark an image as AI-generated. The image or featured image must already have its disclosure enabled.
+Enable the rules under Settings > AI Image & Video Labels > Location-specific display. Add one CSS selector per line. An icon-only rule changes an existing disclosure in the matched area to the compact symbol; a hidden rule removes that visible disclosure in the matched area. For featured images, hidden rules also restore theme-owned markup when the plugin had added a wrapper or temporary fallback classes, so theme overlays, counters and structural selectors remain intact. These rules never mark an image as AI-generated. The image or featured image must already have its disclosure enabled.
 
 For a stable editor-controlled setup, add a custom class such as `ai-label-disclosure-symbol-only` to the outer Group, Cover, Query or layout container. Enter the class name without a dot in the block editor, then enter `.ai-label-disclosure-symbol-only` in the plugin setting. To restrict it to the posts homepage, use `body.home .ai-label-disclosure-symbol-only`.
 
@@ -218,6 +218,12 @@ Yes. Choose "Custom symbol" and select a PNG or SVG file from the Media Library.
 For support, visit [drissner.media/kontakt](https://drissner.media/kontakt). If the plugin is useful to you, you can support its development through [PayPal](https://www.paypal.com/paypalme/drissner).
 
 == Changelog ==
+
+= 3.0.2 =
+* Fixed a theme-compatibility issue where hiding an AI disclosure at a configured location could leave the plugin's featured-image wrapper in place and interfere with theme-owned thumbnail overlays, counters, hover effects or structural CSS selectors.
+* Hidden location rules now restore the host theme's original featured-image markup by removing the disclosure label and the plugin-added wrapper.
+* Location selectors can now match the image element itself as well as the disclosure frame or an ancestor, making selector rules more predictable across themes and page builders.
+* The 3.0.2 compatibility change is generic and adds no Newsblock-specific branch or new theme-specific selector.
 
 = 3.0.1 =
 * Release-hardening update following the official WordPress Plugin Check run for 3.0.0.
